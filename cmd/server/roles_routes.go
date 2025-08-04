@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -129,9 +130,8 @@ func (h *RolesHandler) getRoles(c *gin.Context) {
 	var roles []Role
 	for rows.Next() {
 		var role Role
-		var ipAccessArray []string
 		err := rows.Scan(
-			&role.ID, &role.Name, &role.Icon, &role.Description, &ipAccessArray,
+			&role.ID, &role.Name, &role.Icon, &role.Description, pq.Array(&role.IPAccess),
 			&role.EnforceTFA, &role.AdminAccess, &role.AppAccess,
 			&role.CreatedAt, &role.UpdatedAt,
 		)
@@ -140,7 +140,6 @@ func (h *RolesHandler) getRoles(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 			return
 		}
-		role.IPAccess = ipAccessArray
 		roles = append(roles, role)
 	}
 
@@ -217,7 +216,7 @@ func (h *RolesHandler) createRole(c *gin.Context) {
 		INSERT INTO roles (name, icon, description, ip_access, enforce_tfa, admin_access, app_access)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
-	`, req.Name, req.Icon, req.Description, req.IPAccess, enforceTFA, adminAccess, appAccess).Scan(&roleID)
+	`, req.Name, req.Icon, req.Description, pq.Array(req.IPAccess), enforceTFA, adminAccess, appAccess).Scan(&roleID)
 
 	if err != nil {
 		logrus.WithError(err).Error("Database error while creating role")
@@ -274,9 +273,8 @@ func (h *RolesHandler) getRoleByID(roleID string) (*Role, error) {
 	`
 
 	var role Role
-	var ipAccessArray []string
 	err := h.db.QueryRow(query, roleID).Scan(
-		&role.ID, &role.Name, &role.Icon, &role.Description, &ipAccessArray,
+		&role.ID, &role.Name, &role.Icon, &role.Description, pq.Array(&role.IPAccess),
 		&role.EnforceTFA, &role.AdminAccess, &role.AppAccess,
 		&role.CreatedAt, &role.UpdatedAt,
 	)
@@ -284,7 +282,6 @@ func (h *RolesHandler) getRoleByID(roleID string) (*Role, error) {
 		return nil, err
 	}
 
-	role.IPAccess = ipAccessArray
 	return &role, nil
 }
 
@@ -357,7 +354,7 @@ func (h *RolesHandler) updateRole(c *gin.Context) {
 	}
 	if req.IPAccess != nil {
 		updateFields = append(updateFields, "ip_access = $"+strconv.Itoa(argCount))
-		args = append(args, req.IPAccess)
+		args = append(args, pq.Array(req.IPAccess))
 		argCount++
 	}
 	if req.EnforceTFA != nil {
