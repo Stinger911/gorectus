@@ -242,8 +242,8 @@ func TestHealthCheckResponse(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "1.0.0")
 }
 
-// Test that all placeholder endpoints return not implemented
-func TestPlaceholderEndpointsReturnNotImplemented(t *testing.T) {
+// Test that protected endpoints require authentication and placeholder endpoints return not implemented
+func TestEndpointAuthentication(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
@@ -253,27 +253,46 @@ func TestPlaceholderEndpointsReturnNotImplemented(t *testing.T) {
 	}
 	server.setupRoutes()
 
-	// Test a few key placeholder endpoints
-	endpoints := []struct {
+	// Test protected endpoints (should return 401 without auth)
+	protectedEndpoints := []struct {
 		method string
 		path   string
 	}{
-		{"POST", "/api/v1/auth/login"},
 		{"GET", "/api/v1/collections"},
 		{"GET", "/api/v1/users"},
 		{"GET", "/api/v1/roles"},
 		{"GET", "/api/v1/items/test"},
 	}
 
-	for _, endpoint := range endpoints {
+	for _, endpoint := range protectedEndpoints {
+		t.Run(endpoint.method+" "+endpoint.path+" (unauthorized)", func(t *testing.T) {
+			req, _ := http.NewRequest(endpoint.method, endpoint.path, nil)
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusUnauthorized, w.Code)
+			assert.Contains(t, w.Body.String(), "Authorization header required")
+		})
+	}
+
+	// Test auth endpoints that actually work
+	authEndpoints := []struct {
+		method       string
+		path         string
+		expectedCode int
+	}{
+		{"POST", "/api/v1/auth/login", http.StatusBadRequest}, // Bad request without proper body
+	}
+
+	for _, endpoint := range authEndpoints {
 		t.Run(endpoint.method+" "+endpoint.path, func(t *testing.T) {
 			req, _ := http.NewRequest(endpoint.method, endpoint.path, nil)
 			w := httptest.NewRecorder()
 
 			router.ServeHTTP(w, req)
 
-			assert.Equal(t, http.StatusNotImplemented, w.Code)
-			assert.Contains(t, w.Body.String(), "not implemented yet")
+			assert.Equal(t, endpoint.expectedCode, w.Code)
 		})
 	}
 }

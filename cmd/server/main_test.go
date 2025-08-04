@@ -86,30 +86,42 @@ func (suite *ServerTestSuite) TestHealthCheck() {
 // Test authentication endpoints
 func (suite *ServerTestSuite) TestAuthEndpoints() {
 	tests := []struct {
-		name     string
-		method   string
-		path     string
-		body     map[string]interface{}
-		expected int
+		name        string
+		method      string
+		path        string
+		body        map[string]interface{}
+		expected    int
+		expectError string
 	}{
 		{
-			name:     "Login endpoint",
-			method:   "POST",
-			path:     "/api/v1/auth/login",
-			body:     map[string]interface{}{"email": "test@example.com", "password": "password"},
-			expected: http.StatusNotImplemented,
+			name:        "Login endpoint - invalid payload",
+			method:      "POST",
+			path:        "/api/v1/auth/login",
+			body:        map[string]interface{}{"invalid": "data"},
+			expected:    http.StatusBadRequest,
+			expectError: "Invalid request payload",
 		},
 		{
-			name:     "Logout endpoint",
-			method:   "POST",
-			path:     "/api/v1/auth/logout",
-			expected: http.StatusNotImplemented,
+			name:        "Login endpoint - missing credentials",
+			method:      "POST",
+			path:        "/api/v1/auth/login",
+			body:        map[string]interface{}{},
+			expected:    http.StatusBadRequest,
+			expectError: "Invalid request payload",
 		},
 		{
-			name:     "Refresh endpoint",
-			method:   "POST",
-			path:     "/api/v1/auth/refresh",
-			expected: http.StatusNotImplemented,
+			name:        "Logout endpoint - no auth",
+			method:      "POST",
+			path:        "/api/v1/auth/logout",
+			expected:    http.StatusUnauthorized,
+			expectError: "Authorization header required",
+		},
+		{
+			name:        "Refresh endpoint - no auth",
+			method:      "POST",
+			path:        "/api/v1/auth/refresh",
+			expected:    http.StatusUnauthorized,
+			expectError: "Authorization header required",
 		},
 	}
 
@@ -134,12 +146,12 @@ func (suite *ServerTestSuite) TestAuthEndpoints() {
 			var response map[string]interface{}
 			err := json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err)
-			assert.Contains(t, response["error"], "not implemented yet")
+			assert.Contains(t, response["error"], tt.expectError)
 		})
 	}
 }
 
-// Test collections endpoints
+// Test collections endpoints (protected, require auth)
 func (suite *ServerTestSuite) TestCollectionsEndpoints() {
 	tests := []struct {
 		name     string
@@ -147,11 +159,11 @@ func (suite *ServerTestSuite) TestCollectionsEndpoints() {
 		path     string
 		expected int
 	}{
-		{"Get collections", "GET", "/api/v1/collections", http.StatusNotImplemented},
-		{"Create collection", "POST", "/api/v1/collections", http.StatusNotImplemented},
-		{"Get collection", "GET", "/api/v1/collections/test", http.StatusNotImplemented},
-		{"Update collection", "PATCH", "/api/v1/collections/test", http.StatusNotImplemented},
-		{"Delete collection", "DELETE", "/api/v1/collections/test", http.StatusNotImplemented},
+		{"Get collections", "GET", "/api/v1/collections", http.StatusUnauthorized},
+		{"Create collection", "POST", "/api/v1/collections", http.StatusUnauthorized},
+		{"Get collection", "GET", "/api/v1/collections/test", http.StatusUnauthorized},
+		{"Update collection", "PATCH", "/api/v1/collections/test", http.StatusUnauthorized},
+		{"Delete collection", "DELETE", "/api/v1/collections/test", http.StatusUnauthorized},
 	}
 
 	for _, tt := range tests {
@@ -162,11 +174,16 @@ func (suite *ServerTestSuite) TestCollectionsEndpoints() {
 			suite.router.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expected, w.Code)
+
+			var response map[string]interface{}
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			require.NoError(t, err)
+			assert.Equal(t, "Authorization header required", response["error"])
 		})
 	}
 }
 
-// Test items endpoints
+// Test items endpoints (protected, require auth)
 func (suite *ServerTestSuite) TestItemsEndpoints() {
 	tests := []struct {
 		name     string
@@ -174,11 +191,11 @@ func (suite *ServerTestSuite) TestItemsEndpoints() {
 		path     string
 		expected int
 	}{
-		{"Get items", "GET", "/api/v1/items/test", http.StatusNotImplemented},
-		{"Create item", "POST", "/api/v1/items/test", http.StatusNotImplemented},
-		{"Get item", "GET", "/api/v1/items/test/1", http.StatusNotImplemented},
-		{"Update item", "PATCH", "/api/v1/items/test/1", http.StatusNotImplemented},
-		{"Delete item", "DELETE", "/api/v1/items/test/1", http.StatusNotImplemented},
+		{"Get items", "GET", "/api/v1/items/test", http.StatusUnauthorized},
+		{"Create item", "POST", "/api/v1/items/test", http.StatusUnauthorized},
+		{"Get item", "GET", "/api/v1/items/test/1", http.StatusUnauthorized},
+		{"Update item", "PATCH", "/api/v1/items/test/1", http.StatusUnauthorized},
+		{"Delete item", "DELETE", "/api/v1/items/test/1", http.StatusUnauthorized},
 	}
 
 	for _, tt := range tests {
@@ -189,11 +206,16 @@ func (suite *ServerTestSuite) TestItemsEndpoints() {
 			suite.router.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expected, w.Code)
+
+			var response map[string]interface{}
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			require.NoError(t, err)
+			assert.Equal(t, "Authorization header required", response["error"])
 		})
 	}
 }
 
-// Test users endpoints
+// Test users endpoints (protected, require auth)
 func (suite *ServerTestSuite) TestUsersEndpoints() {
 	tests := []struct {
 		name     string
@@ -201,11 +223,11 @@ func (suite *ServerTestSuite) TestUsersEndpoints() {
 		path     string
 		expected int
 	}{
-		{"Get users", "GET", "/api/v1/users", http.StatusNotImplemented},
-		{"Create user", "POST", "/api/v1/users", http.StatusNotImplemented},
-		{"Get user", "GET", "/api/v1/users/1", http.StatusNotImplemented},
-		{"Update user", "PATCH", "/api/v1/users/1", http.StatusNotImplemented},
-		{"Delete user", "DELETE", "/api/v1/users/1", http.StatusNotImplemented},
+		{"Get users", "GET", "/api/v1/users", http.StatusUnauthorized},
+		{"Create user", "POST", "/api/v1/users", http.StatusUnauthorized},
+		{"Get user", "GET", "/api/v1/users/1", http.StatusUnauthorized},
+		{"Update user", "PATCH", "/api/v1/users/1", http.StatusUnauthorized},
+		{"Delete user", "DELETE", "/api/v1/users/1", http.StatusUnauthorized},
 	}
 
 	for _, tt := range tests {
@@ -216,11 +238,16 @@ func (suite *ServerTestSuite) TestUsersEndpoints() {
 			suite.router.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expected, w.Code)
+
+			var response map[string]interface{}
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			require.NoError(t, err)
+			assert.Equal(t, "Authorization header required", response["error"])
 		})
 	}
 }
 
-// Test roles endpoints
+// Test roles endpoints (protected, require auth)
 func (suite *ServerTestSuite) TestRolesEndpoints() {
 	tests := []struct {
 		name     string
@@ -228,11 +255,11 @@ func (suite *ServerTestSuite) TestRolesEndpoints() {
 		path     string
 		expected int
 	}{
-		{"Get roles", "GET", "/api/v1/roles", http.StatusNotImplemented},
-		{"Create role", "POST", "/api/v1/roles", http.StatusNotImplemented},
-		{"Get role", "GET", "/api/v1/roles/1", http.StatusNotImplemented},
-		{"Update role", "PATCH", "/api/v1/roles/1", http.StatusNotImplemented},
-		{"Delete role", "DELETE", "/api/v1/roles/1", http.StatusNotImplemented},
+		{"Get roles", "GET", "/api/v1/roles", http.StatusUnauthorized},
+		{"Create role", "POST", "/api/v1/roles", http.StatusUnauthorized},
+		{"Get role", "GET", "/api/v1/roles/1", http.StatusUnauthorized},
+		{"Update role", "PATCH", "/api/v1/roles/1", http.StatusUnauthorized},
+		{"Delete role", "DELETE", "/api/v1/roles/1", http.StatusUnauthorized},
 	}
 
 	for _, tt := range tests {
@@ -243,6 +270,11 @@ func (suite *ServerTestSuite) TestRolesEndpoints() {
 			suite.router.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expected, w.Code)
+
+			var response map[string]interface{}
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			require.NoError(t, err)
+			assert.Equal(t, "Authorization header required", response["error"])
 		})
 	}
 }
