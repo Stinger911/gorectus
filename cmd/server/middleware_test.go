@@ -22,8 +22,7 @@ func TestLoggingMiddleware(t *testing.T) {
 	// Add the same logging middleware as in the main server
 	router.Use(func(c *gin.Context) {
 		start := time.Now()
-		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
+		// raw := c.Request.URL.RawQuery
 
 		// Process request
 		c.Next()
@@ -35,10 +34,7 @@ func TestLoggingMiddleware(t *testing.T) {
 		statusCode := c.Writer.Status()
 		bodySize := c.Writer.Size()
 
-		if raw != "" {
-			path = path + "?" + raw
-		}
-
+		// No need to reassign 'path' since it's not used after this point
 		// In tests, we verify the middleware works without actually logging
 		assert.GreaterOrEqual(t, latency, time.Duration(0))
 		// Note: ClientIP() may return empty string in test mode, so we just check it's a string

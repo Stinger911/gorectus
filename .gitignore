@@ -33,3 +33,8 @@ go.work.sum
 
 # Local database files
 pgdata/
+
+# frontend build artifacts
+frontend/dist/
+frontend/build/
+frontend/node_modules/
