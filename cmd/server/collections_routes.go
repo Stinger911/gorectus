@@ -33,6 +33,7 @@ func NewCollectionsHandler(server ServerInterface) *CollectionsHandler {
 func (h *CollectionsHandler) SetupRoutes(v1 *gin.RouterGroup) {
 	// CORS preflight OPTIONS for collections endpoints
 	v1.OPTIONS("/collections", h.optionsHandler)
+	v1.OPTIONS("/collections/:collection", h.optionsHandler)
 
 	// Collections routes (protected)
 	collections := v1.Group("/collections")
@@ -465,6 +466,7 @@ func (h *CollectionsHandler) getCollection(c *gin.Context) {
 		"fields":     fields,
 	}
 
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.JSON(http.StatusOK, gin.H{"data": result})
 }
 
