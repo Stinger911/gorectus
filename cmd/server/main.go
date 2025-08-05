@@ -100,6 +100,10 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		// Set CORS headers
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
 
 		// Add user info to context
 		c.Set("user_id", claims.UserID)

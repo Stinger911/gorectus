@@ -20,47 +20,41 @@ import {
   Chip,
   Alert,
   CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   IconButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   ViewList as ViewListIcon,
-  ExpandMore as ExpandMoreIcon,
   Storage as StorageIcon,
 } from "@mui/icons-material";
-
-interface Collection {
-  id: number;
-  name: string;
-  table_name: string;
-  schema: CollectionField[];
-  created_at: string;
-  updated_at: string;
-  item_count: number;
-}
-
-interface CollectionField {
-  id: number;
-  field_name: string;
-  field_type: "string" | "number" | "boolean" | "date" | "text" | "json";
-  required: boolean;
-  unique: boolean;
-  default_value: string | null;
-}
+import collectionsService, {
+  Collection,
+  CreateCollectionRequest,
+  UpdateCollectionRequest,
+  CollectionWithFields,
+} from "../services/collectionsService";
 
 interface CollectionFormData {
-  name: string;
-  table_name: string;
-  schema: CollectionField[];
+  collection: string;
+  note?: string;
+  hidden: boolean;
+  singleton: boolean;
+  accountability: string;
+  collapse: string;
+  versioning: boolean;
+  fields: FieldFormData[];
+}
+
+interface FieldFormData {
+  field: string;
+  interface?: string;
+  required: boolean;
+  hidden: boolean;
+  readonly: boolean;
+  width: string;
+  note?: string;
 }
 
 const Collections: React.FC = () => {
@@ -68,108 +62,79 @@ const Collections: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingCollection, setEditingCollection] = useState<Collection | null>(
-    null
-  );
+  const [editingCollection, setEditingCollection] =
+    useState<CollectionWithFields | null>(null);
   const [formData, setFormData] = useState<CollectionFormData>({
-    name: "",
-    table_name: "",
-    schema: [],
+    collection: "",
+    note: "",
+    hidden: false,
+    singleton: false,
+    accountability: "all",
+    collapse: "open",
+    versioning: false,
+    fields: [],
   });
 
-  // Mock data for now - will be replaced with API calls
+  // Load collections from API
   useEffect(() => {
-    const mockCollections: Collection[] = [
-      {
-        id: 1,
-        name: "Articles",
-        table_name: "articles",
-        schema: [
-          {
-            id: 1,
-            field_name: "title",
-            field_type: "string",
-            required: true,
-            unique: false,
-            default_value: null,
-          },
-          {
-            id: 2,
-            field_name: "content",
-            field_type: "text",
-            required: true,
-            unique: false,
-            default_value: null,
-          },
-          {
-            id: 3,
-            field_name: "published",
-            field_type: "boolean",
-            required: false,
-            unique: false,
-            default_value: "false",
-          },
-        ],
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-15T10:30:00Z",
-        item_count: 25,
-      },
-      {
-        id: 2,
-        name: "Products",
-        table_name: "products",
-        schema: [
-          {
-            id: 4,
-            field_name: "name",
-            field_type: "string",
-            required: true,
-            unique: false,
-            default_value: null,
-          },
-          {
-            id: 5,
-            field_name: "price",
-            field_type: "number",
-            required: true,
-            unique: false,
-            default_value: null,
-          },
-          {
-            id: 6,
-            field_name: "description",
-            field_type: "text",
-            required: false,
-            unique: false,
-            default_value: null,
-          },
-        ],
-        created_at: "2024-01-05T00:00:00Z",
-        updated_at: "2024-01-10T15:20:00Z",
-        item_count: 12,
-      },
-    ];
-
-    setTimeout(() => {
-      setCollections(mockCollections);
-      setLoading(false);
-    }, 1000);
+    loadCollections();
   }, []);
 
-  const handleOpenDialog = (collection?: Collection) => {
+  const loadCollections = async () => {
+    try {
+      setLoading(true);
+      const response = await collectionsService.getCollections();
+      setCollections(response.data || []);
+    } catch (error) {
+      setError("Failed to load collections");
+      console.error("Error loading collections:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDialog = async (collection?: Collection) => {
     if (collection) {
-      setEditingCollection(collection);
-      setFormData({
-        name: collection.name,
-        table_name: collection.table_name,
-        schema: collection.schema,
-      });
+      try {
+        // Fetch full collection details with fields
+        const collectionDetails = await collectionsService.getCollection(
+          collection.collection
+        );
+        setEditingCollection(collectionDetails);
+        setFormData({
+          collection: collectionDetails.collection.collection,
+          note: collectionDetails.collection.note || "",
+          hidden: collectionDetails.collection.hidden,
+          singleton: collectionDetails.collection.singleton,
+          accountability: collectionDetails.collection.accountability,
+          collapse: collectionDetails.collection.collapse,
+          versioning: collectionDetails.collection.versioning,
+          fields: collectionDetails.fields.map((field) => ({
+            field: field.field,
+            interface: field.interface,
+            required: field.required,
+            hidden: field.hidden,
+            readonly: field.readonly,
+            width: field.width,
+            note: field.note,
+          })),
+        });
+      } catch (error) {
+        setError("Failed to load collection details");
+        console.error("Error loading collection details:", error);
+        return;
+      }
     } else {
       setEditingCollection(null);
       setFormData({
-        name: "",
-        table_name: "",
-        schema: [],
+        collection: "",
+        note: "",
+        hidden: false,
+        singleton: false,
+        accountability: "all",
+        collapse: "open",
+        versioning: false,
+        fields: [],
       });
     }
     setDialogOpen(true);
@@ -183,43 +148,35 @@ const Collections: React.FC = () => {
 
   const handleFormChange = (field: keyof CollectionFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-
-    // Auto-generate table name from collection name
-    if (field === "name" && typeof value === "string") {
-      const tableName = value
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "_")
-        .replace(/_+/g, "_");
-      setFormData((prev) => ({ ...prev, table_name: tableName }));
-    }
   };
 
   const addField = () => {
-    const newField: CollectionField = {
-      id: Date.now(),
-      field_name: "",
-      field_type: "string",
+    const newField: FieldFormData = {
+      field: "",
+      interface: "input",
       required: false,
-      unique: false,
-      default_value: null,
+      hidden: false,
+      readonly: false,
+      width: "full",
+      note: "",
     };
     setFormData((prev) => ({
       ...prev,
-      schema: [...prev.schema, newField],
+      fields: [...prev.fields, newField],
     }));
   };
 
-  const updateField = (index: number, field: Partial<CollectionField>) => {
+  const updateField = (index: number, field: Partial<FieldFormData>) => {
     setFormData((prev) => ({
       ...prev,
-      schema: prev.schema.map((f, i) => (i === index ? { ...f, ...field } : f)),
+      fields: prev.fields.map((f, i) => (i === index ? { ...f, ...field } : f)),
     }));
   };
 
   const removeField = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      schema: prev.schema.filter((_, i) => i !== index),
+      fields: prev.fields.filter((_, i) => i !== index),
     }));
   };
 
@@ -227,88 +184,102 @@ const Collections: React.FC = () => {
     setError(null);
 
     // Basic validation
-    if (!formData.name || !formData.table_name) {
-      setError("Please fill in collection name and table name");
+    if (!formData.collection) {
+      setError("Please fill in collection name");
       return;
     }
 
-    if (formData.schema.length === 0) {
+    if (formData.fields.length === 0) {
       setError("At least one field is required");
       return;
     }
 
     // Validate fields
-    for (const field of formData.schema) {
-      if (!field.field_name) {
+    for (const field of formData.fields) {
+      if (!field.field) {
         setError("All fields must have a name");
         return;
       }
     }
 
     try {
-      // Mock API call - will be replaced with actual API
       if (editingCollection) {
         // Update existing collection
-        const updatedCollection: Collection = {
-          ...editingCollection,
-          ...formData,
-          updated_at: new Date().toISOString(),
+        const updateRequest: UpdateCollectionRequest = {
+          note: formData.note,
+          hidden: formData.hidden,
+          singleton: formData.singleton,
+          accountability: formData.accountability,
+          collapse: formData.collapse,
+          versioning: formData.versioning,
         };
-        setCollections((prev) =>
-          prev.map((c) =>
-            c.id === editingCollection.id ? updatedCollection : c
-          )
+
+        await collectionsService.updateCollection(
+          editingCollection.collection.collection,
+          updateRequest
         );
       } else {
         // Create new collection
-        const newCollection: Collection = {
-          id: Math.max(...collections.map((c) => c.id)) + 1,
-          ...formData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          item_count: 0,
+        const createRequest: CreateCollectionRequest = {
+          collection: formData.collection,
+          hidden: formData.hidden,
+          singleton: formData.singleton,
+          accountability: formData.accountability,
+          collapse: formData.collapse,
+          versioning: formData.versioning,
+          fields: formData.fields.map((field) => {
+            const fieldData: any = {
+              id: "", // Will be generated by backend
+              collection: formData.collection,
+              field: field.field,
+              required: field.required,
+              hidden: field.hidden,
+              readonly: field.readonly,
+              width: field.width,
+              special: [],
+            };
+
+            // Only include optional fields if they have values
+            if (field.interface) fieldData.interface = field.interface;
+            if (field.note) fieldData.note = field.note;
+
+            return fieldData;
+          }),
         };
-        setCollections((prev) => [...prev, newCollection]);
+
+        // Add note if it has a value
+        if (formData.note) {
+          createRequest.note = formData.note;
+        }
+
+        await collectionsService.createCollection(createRequest);
       }
 
+      // Reload collections
+      await loadCollections();
       handleCloseDialog();
-    } catch (err) {
-      setError("Failed to save collection");
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to save collection");
     }
   };
 
-  const handleDelete = async (collectionId: number) => {
+  const handleDelete = async (collectionName: string) => {
     if (
       window.confirm(
         "Are you sure you want to delete this collection? This will also delete all data in the collection."
       )
     ) {
-      // Mock API call - will be replaced with actual API
-      setCollections((prev) => prev.filter((c) => c.id !== collectionId));
+      try {
+        await collectionsService.deleteCollection(collectionName);
+        await loadCollections();
+      } catch (error: any) {
+        setError(error.response?.data?.error || "Failed to delete collection");
+      }
     }
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
-  };
-
-  const getFieldTypeColor = (type: string) => {
-    switch (type) {
-      case "string":
-        return "primary";
-      case "number":
-        return "secondary";
-      case "boolean":
-        return "success";
-      case "date":
-        return "warning";
-      case "text":
-        return "info";
-      case "json":
-        return "error";
-      default:
-        return "default";
-    }
   };
 
   if (loading) {
@@ -350,7 +321,7 @@ const Collections: React.FC = () => {
 
       <Grid container spacing={3}>
         {collections.map((collection) => (
-          <Grid item xs={12} md={6} lg={4} key={collection.id}>
+          <Grid item xs={12} md={6} lg={4} key={collection.collection}>
             <Card
               sx={{ height: "100%", display: "flex", flexDirection: "column" }}
             >
@@ -360,79 +331,31 @@ const Collections: React.FC = () => {
                 >
                   <StorageIcon color="primary" />
                   <Typography variant="h6" component="div">
-                    {collection.name}
+                    {collection.collection}
                   </Typography>
                 </Box>
 
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 1 }}
-                >
-                  Table: {collection.table_name}
-                </Typography>
+                {collection.note && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    Note: {collection.note}
+                  </Typography>
+                )}
 
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  {collection.item_count} items
-                </Typography>
-
-                <Accordion>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="body2">
-                      Schema ({collection.schema.length} fields)
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <List dense>
-                      {collection.schema.map((field, index) => (
-                        <ListItem key={index} sx={{ px: 0 }}>
-                          <ListItemText
-                            primary={
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                <Typography variant="body2">
-                                  {field.field_name}
-                                </Typography>
-                                {field.required && (
-                                  <Chip
-                                    label="Required"
-                                    size="small"
-                                    color="error"
-                                  />
-                                )}
-                                {field.unique && (
-                                  <Chip
-                                    label="Unique"
-                                    size="small"
-                                    color="warning"
-                                  />
-                                )}
-                              </Box>
-                            }
-                            secondary={
-                              <Chip
-                                label={field.field_type}
-                                size="small"
-                                color={
-                                  getFieldTypeColor(field.field_type) as any
-                                }
-                              />
-                            }
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </AccordionDetails>
-                </Accordion>
+                <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
+                  {collection.hidden && (
+                    <Chip label="Hidden" size="small" color="warning" />
+                  )}
+                  {collection.singleton && (
+                    <Chip label="Singleton" size="small" color="info" />
+                  )}
+                  {collection.versioning && (
+                    <Chip label="Versioning" size="small" color="secondary" />
+                  )}
+                </Box>
 
                 <Typography
                   variant="caption"
@@ -456,7 +379,7 @@ const Collections: React.FC = () => {
                 </IconButton>
                 <IconButton
                   size="small"
-                  onClick={() => handleDelete(collection.id)}
+                  onClick={() => handleDelete(collection.collection)}
                   title="Delete"
                   color="error"
                 >
@@ -486,19 +409,110 @@ const Collections: React.FC = () => {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
             <TextField
               label="Collection Name"
-              value={formData.name}
-              onChange={(e) => handleFormChange("name", e.target.value)}
+              value={formData.collection}
+              onChange={(e) => handleFormChange("collection", e.target.value)}
               required
               fullWidth
+              disabled={!!editingCollection}
+              helperText={
+                editingCollection
+                  ? "Collection name cannot be changed"
+                  : "The name of the collection (database table)"
+              }
             />
+
             <TextField
-              label="Table Name"
-              value={formData.table_name}
-              onChange={(e) => handleFormChange("table_name", e.target.value)}
-              required
+              label="Note"
+              value={formData.note}
+              onChange={(e) => handleFormChange("note", e.target.value)}
               fullWidth
-              helperText="Database table name (auto-generated from collection name)"
+              multiline
+              rows={2}
+              helperText="Optional description for this collection"
             />
+
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Accountability</InputLabel>
+                  <Select
+                    value={formData.accountability}
+                    label="Accountability"
+                    onChange={(e) =>
+                      handleFormChange("accountability", e.target.value)
+                    }
+                  >
+                    <MenuItem value="all">All</MenuItem>
+                    <MenuItem value="activity">Activity</MenuItem>
+                    <MenuItem value="none">None</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Collapse</InputLabel>
+                  <Select
+                    value={formData.collapse}
+                    label="Collapse"
+                    onChange={(e) =>
+                      handleFormChange("collapse", e.target.value)
+                    }
+                  >
+                    <MenuItem value="open">Open</MenuItem>
+                    <MenuItem value="closed">Closed</MenuItem>
+                    <MenuItem value="locked">Locked</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+
+            <Grid container spacing={2}>
+              <Grid item xs={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Hidden</InputLabel>
+                  <Select
+                    value={formData.hidden ? "yes" : "no"}
+                    label="Hidden"
+                    onChange={(e) =>
+                      handleFormChange("hidden", e.target.value === "yes")
+                    }
+                  >
+                    <MenuItem value="no">No</MenuItem>
+                    <MenuItem value="yes">Yes</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Singleton</InputLabel>
+                  <Select
+                    value={formData.singleton ? "yes" : "no"}
+                    label="Singleton"
+                    onChange={(e) =>
+                      handleFormChange("singleton", e.target.value === "yes")
+                    }
+                  >
+                    <MenuItem value="no">No</MenuItem>
+                    <MenuItem value="yes">Yes</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Versioning</InputLabel>
+                  <Select
+                    value={formData.versioning ? "yes" : "no"}
+                    label="Versioning"
+                    onChange={(e) =>
+                      handleFormChange("versioning", e.target.value === "yes")
+                    }
+                  >
+                    <MenuItem value="no">No</MenuItem>
+                    <MenuItem value="yes">Yes</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
 
             <Box sx={{ mt: 2 }}>
               <Box
@@ -509,51 +523,58 @@ const Collections: React.FC = () => {
                   mb: 2,
                 }}
               >
-                <Typography variant="h6">Schema Fields</Typography>
-                <Button startIcon={<AddIcon />} onClick={addField}>
+                <Typography variant="h6">Fields</Typography>
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={addField}
+                  disabled={!!editingCollection}
+                >
                   Add Field
                 </Button>
               </Box>
 
-              {formData.schema.map((field, index) => (
-                <Paper key={field.id} sx={{ p: 2, mb: 2 }}>
+              {formData.fields.map((field, index) => (
+                <Paper key={index} sx={{ p: 2, mb: 2 }}>
                   <Box
                     sx={{ display: "flex", flexDirection: "column", gap: 2 }}
                   >
                     <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                       <TextField
                         label="Field Name"
-                        value={field.field_name}
+                        value={field.field}
                         onChange={(e) =>
-                          updateField(index, { field_name: e.target.value })
+                          updateField(index, { field: e.target.value })
                         }
                         required
                         size="small"
                         sx={{ flex: 1 }}
+                        disabled={!!editingCollection}
                       />
                       <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel>Type</InputLabel>
+                        <InputLabel>Interface</InputLabel>
                         <Select
-                          value={field.field_type}
-                          label="Type"
+                          value={field.interface || "input"}
+                          label="Interface"
                           onChange={(e) =>
                             updateField(index, {
-                              field_type: e.target.value as any,
+                              interface: e.target.value,
                             })
                           }
+                          disabled={!!editingCollection}
                         >
-                          <MenuItem value="string">String</MenuItem>
-                          <MenuItem value="number">Number</MenuItem>
-                          <MenuItem value="boolean">Boolean</MenuItem>
-                          <MenuItem value="date">Date</MenuItem>
-                          <MenuItem value="text">Text</MenuItem>
-                          <MenuItem value="json">JSON</MenuItem>
+                          <MenuItem value="input">Input</MenuItem>
+                          <MenuItem value="textarea">Textarea</MenuItem>
+                          <MenuItem value="select-dropdown">Select</MenuItem>
+                          <MenuItem value="datetime">DateTime</MenuItem>
+                          <MenuItem value="toggle">Toggle</MenuItem>
+                          <MenuItem value="file">File</MenuItem>
                         </Select>
                       </FormControl>
                       <IconButton
                         onClick={() => removeField(index)}
                         color="error"
                         size="small"
+                        disabled={!!editingCollection}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -570,6 +591,7 @@ const Collections: React.FC = () => {
                               required: e.target.value === "yes",
                             })
                           }
+                          disabled={!!editingCollection}
                         >
                           <MenuItem value="no">No</MenuItem>
                           <MenuItem value="yes">Yes</MenuItem>
@@ -577,36 +599,79 @@ const Collections: React.FC = () => {
                       </FormControl>
 
                       <FormControl size="small">
-                        <InputLabel>Unique</InputLabel>
+                        <InputLabel>Hidden</InputLabel>
                         <Select
-                          value={field.unique ? "yes" : "no"}
-                          label="Unique"
+                          value={field.hidden ? "yes" : "no"}
+                          label="Hidden"
                           onChange={(e) =>
                             updateField(index, {
-                              unique: e.target.value === "yes",
+                              hidden: e.target.value === "yes",
                             })
                           }
+                          disabled={!!editingCollection}
                         >
                           <MenuItem value="no">No</MenuItem>
                           <MenuItem value="yes">Yes</MenuItem>
                         </Select>
                       </FormControl>
 
+                      <FormControl size="small">
+                        <InputLabel>Read Only</InputLabel>
+                        <Select
+                          value={field.readonly ? "yes" : "no"}
+                          label="Read Only"
+                          onChange={(e) =>
+                            updateField(index, {
+                              readonly: e.target.value === "yes",
+                            })
+                          }
+                          disabled={!!editingCollection}
+                        >
+                          <MenuItem value="no">No</MenuItem>
+                          <MenuItem value="yes">Yes</MenuItem>
+                        </Select>
+                      </FormControl>
+
+                      <FormControl size="small" sx={{ minWidth: 100 }}>
+                        <InputLabel>Width</InputLabel>
+                        <Select
+                          value={field.width}
+                          label="Width"
+                          onChange={(e) =>
+                            updateField(index, {
+                              width: e.target.value,
+                            })
+                          }
+                          disabled={!!editingCollection}
+                        >
+                          <MenuItem value="half">Half</MenuItem>
+                          <MenuItem value="full">Full</MenuItem>
+                        </Select>
+                      </FormControl>
+
                       <TextField
-                        label="Default Value"
-                        value={field.default_value || ""}
+                        label="Note"
+                        value={field.note || ""}
                         onChange={(e) =>
                           updateField(index, {
-                            default_value: e.target.value || null,
+                            note: e.target.value,
                           })
                         }
                         size="small"
                         sx={{ flex: 1 }}
+                        disabled={!!editingCollection}
                       />
                     </Box>
                   </Box>
                 </Paper>
               ))}
+
+              {editingCollection && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Field editing is not yet supported. Please create a new
+                  collection to modify fields.
+                </Alert>
+              )}
             </Box>
           </Box>
         </DialogContent>

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -301,13 +302,19 @@ func (h *CollectionsHandler) createCollection(c *gin.Context) {
 		versioning = *req.Versioning
 	}
 
-	// Convert JSON fields to bytes
-	var translationsBytes, itemDuplicationFieldsBytes []byte
+	// Convert JSON fields to bytes or NULL
+	var translationsData, itemDuplicationFieldsData interface{}
 	if req.Translations != nil {
-		translationsBytes, _ = json.Marshal(req.Translations)
+		translationsBytes, _ := json.Marshal(req.Translations)
+		translationsData = translationsBytes
+	} else {
+		translationsData = nil
 	}
 	if req.ItemDuplicationFields != nil {
-		itemDuplicationFieldsBytes, _ = json.Marshal(req.ItemDuplicationFields)
+		itemDuplicationFieldsBytes, _ := json.Marshal(req.ItemDuplicationFields)
+		itemDuplicationFieldsData = itemDuplicationFieldsBytes
+	} else {
+		itemDuplicationFieldsData = nil
 	}
 
 	// Insert collection
@@ -319,9 +326,9 @@ func (h *CollectionsHandler) createCollection(c *gin.Context) {
 			item_duplication_fields, sort, "group", collapse, preview_url, versioning
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 	`, req.Collection, req.Icon, req.Note, req.DisplayTemplate, hidden, singleton,
-		translationsBytes, req.ArchiveField, archiveAppFilter, req.ArchiveValue,
+		translationsData, req.ArchiveField, archiveAppFilter, req.ArchiveValue,
 		req.UnarchiveValue, req.SortField, accountability, req.Color,
-		itemDuplicationFieldsBytes, req.Sort, req.Group, collapse, req.PreviewURL, versioning)
+		itemDuplicationFieldsData, req.Sort, req.Group, collapse, req.PreviewURL, versioning)
 
 	if err != nil {
 		logrus.WithError(err).Error("Database error while creating collection")
@@ -346,24 +353,38 @@ func (h *CollectionsHandler) createCollection(c *gin.Context) {
 	// Add fields if provided
 	if len(req.Fields) > 0 {
 		for _, field := range req.Fields {
-			var specialBytes, optionsBytes, displayOptionsBytes, translationsBytes, conditionsBytes, validationBytes []byte
-			if field.Special != nil {
-				specialBytes, _ = json.Marshal(field.Special)
-			}
+			// Handle JSON fields properly - use nil for NULL instead of empty byte slices
+			var optionsData, displayOptionsData, translationsData, conditionsData, validationData interface{}
+
 			if field.Options != nil {
-				optionsBytes, _ = json.Marshal(field.Options)
+				optionsBytes, _ := json.Marshal(field.Options)
+				optionsData = optionsBytes
+			} else {
+				optionsData = nil
 			}
 			if field.DisplayOptions != nil {
-				displayOptionsBytes, _ = json.Marshal(field.DisplayOptions)
+				displayOptionsBytes, _ := json.Marshal(field.DisplayOptions)
+				displayOptionsData = displayOptionsBytes
+			} else {
+				displayOptionsData = nil
 			}
 			if field.Translations != nil {
-				translationsBytes, _ = json.Marshal(field.Translations)
+				translationsBytes, _ := json.Marshal(field.Translations)
+				translationsData = translationsBytes
+			} else {
+				translationsData = nil
 			}
 			if field.Conditions != nil {
-				conditionsBytes, _ = json.Marshal(field.Conditions)
+				conditionsBytes, _ := json.Marshal(field.Conditions)
+				conditionsData = conditionsBytes
+			} else {
+				conditionsData = nil
 			}
 			if field.Validation != nil {
-				validationBytes, _ = json.Marshal(field.Validation)
+				validationBytes, _ := json.Marshal(field.Validation)
+				validationData = validationBytes
+			} else {
+				validationData = nil
 			}
 
 			// Set field defaults
@@ -372,16 +393,24 @@ func (h *CollectionsHandler) createCollection(c *gin.Context) {
 				width = field.Width
 			}
 
+			// Convert special array to PostgreSQL array format
+			var special interface{}
+			if len(field.Special) > 0 {
+				special = pq.Array(field.Special)
+			} else {
+				special = pq.Array([]string{})
+			}
+
 			_, err = tx.Exec(`
 				INSERT INTO fields (
 					collection, field, special, interface, options, display, 
 					display_options, readonly, hidden, sort, width, translations,
 					note, conditions, required, "group", validation, validation_message
 				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-			`, req.Collection, field.Field, specialBytes, field.Interface, optionsBytes,
-				field.Display, displayOptionsBytes, field.Readonly, field.Hidden,
-				field.Sort, width, translationsBytes, field.Note, conditionsBytes,
-				field.Required, field.Group, validationBytes, field.ValidationMessage)
+			`, req.Collection, field.Field, special, field.Interface, optionsData,
+				field.Display, displayOptionsData, field.Readonly, field.Hidden,
+				field.Sort, width, translationsData, field.Note, conditionsData,
+				field.Required, field.Group, validationData, field.ValidationMessage)
 
 			if err != nil {
 				logrus.WithError(err).Error("Database error while creating field")
@@ -735,10 +764,11 @@ func (h *CollectionsHandler) getFieldsByCollection(collectionName string) ([]Fie
 	var fields []Field
 	for rows.Next() {
 		var field Field
-		var specialBytes, optionsBytes, displayOptionsBytes, translationsBytes, conditionsBytes, validationBytes []byte
+		var special pq.StringArray
+		var optionsBytes, displayOptionsBytes, translationsBytes, conditionsBytes, validationBytes []byte
 
 		err := rows.Scan(
-			&field.ID, &field.Collection, &field.Field, &specialBytes, &field.Interface,
+			&field.ID, &field.Collection, &field.Field, &special, &field.Interface,
 			&optionsBytes, &field.Display, &displayOptionsBytes, &field.Readonly,
 			&field.Hidden, &field.Sort, &field.Width, &translationsBytes, &field.Note,
 			&conditionsBytes, &field.Required, &field.Group, &validationBytes,
@@ -748,10 +778,10 @@ func (h *CollectionsHandler) getFieldsByCollection(collectionName string) ([]Fie
 			return nil, err
 		}
 
+		// Convert PostgreSQL array to Go slice
+		field.Special = []string(special)
+
 		// Parse JSON fields
-		if specialBytes != nil {
-			json.Unmarshal(specialBytes, &field.Special)
-		}
 		if optionsBytes != nil {
 			json.Unmarshal(optionsBytes, &field.Options)
 		}

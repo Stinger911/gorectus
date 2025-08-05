@@ -7,10 +7,20 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
-  role: string;
-  status?: string;
-  created_at?: string;
+  avatar?: string | null;
+  language: string;
+  theme: string;
+  status: string;
+  role_id: string;
+  role_name: string;
   last_access?: string | null;
+  last_page?: string | null;
+  provider: string;
+  external_identifier?: string | null;
+  email_notifications: boolean;
+  tags?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LoginResponse {

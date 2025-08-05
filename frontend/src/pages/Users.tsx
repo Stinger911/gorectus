@@ -23,6 +23,7 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  Pagination,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -30,72 +31,91 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
-
-interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  status: "active" | "inactive";
-  created_at: string;
-  last_login: string | null;
-}
+import {
+  User,
+  CreateUserRequest,
+  UpdateUserRequest,
+  usersService,
+} from "../services/usersService";
+import { Role, rolesService } from "../services/rolesService";
 
 interface UserFormData {
   email: string;
   first_name: string;
   last_name: string;
   password?: string;
-  role: string;
-  status: "active" | "inactive";
+  role_id: string;
+  status: string;
+  language?: string;
+  theme?: string;
+  email_notifications?: boolean;
 }
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<UserFormData>({
     email: "",
     first_name: "",
     last_name: "",
     password: "",
-    role: "user",
+    role_id: "",
     status: "active",
+    language: "en-US",
+    theme: "auto",
+    email_notifications: true,
   });
 
-  // Mock data for now - will be replaced with API calls
+  // Fetch users and roles on component mount
   useEffect(() => {
-    const mockUsers: User[] = [
-      {
-        id: 1,
-        email: "admin@gorectus.local",
-        first_name: "Admin",
-        last_name: "User",
-        role: "admin",
-        status: "active",
-        created_at: "2024-01-01T00:00:00Z",
-        last_login: "2024-01-15T10:30:00Z",
-      },
-      {
-        id: 2,
-        email: "user@example.com",
-        first_name: "John",
-        last_name: "Doe",
-        role: "user",
-        status: "active",
-        created_at: "2024-01-10T00:00:00Z",
-        last_login: null,
-      },
-    ];
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    setTimeout(() => {
-      setUsers(mockUsers);
-      setLoading(false);
-    }, 1000);
-  }, []);
+        // Fetch roles first
+        const rolesResponse = await rolesService.getRoles(1, 100); // Get all roles
+        setRoles(rolesResponse.data);
+
+        // Then fetch users
+        await fetchUsers(1); // Always start from page 1 initially
+      } catch (err: any) {
+        setError(err.message || "Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []); // Remove currentPage dependency
+
+  // Fetch users with pagination
+  const fetchUsers = async (page: number) => {
+    try {
+      const response = await usersService.getUsers(page, 20);
+      setUsers(response.data);
+      setCurrentPage(page);
+      setTotalUsers(response.meta.total);
+      setTotalPages(Math.ceil(response.meta.total / response.meta.limit));
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch users");
+    }
+  };
+
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    page: number
+  ) => {
+    fetchUsers(page);
+  };
 
   const handleOpenDialog = (user?: User) => {
     if (user) {
@@ -104,8 +124,11 @@ const Users: React.FC = () => {
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
-        role: user.role,
+        role_id: user.role_id,
         status: user.status,
+        language: user.language,
+        theme: user.theme,
+        email_notifications: user.email_notifications,
       });
     } else {
       setEditingUser(null);
@@ -114,8 +137,11 @@ const Users: React.FC = () => {
         first_name: "",
         last_name: "",
         password: "",
-        role: "user",
+        role_id: roles.length > 0 ? roles[0].id : "",
         status: "active",
+        language: "en-US",
+        theme: "auto",
+        email_notifications: true,
       });
     }
     setDialogOpen(true);
@@ -125,72 +151,109 @@ const Users: React.FC = () => {
     setDialogOpen(false);
     setEditingUser(null);
     setError(null);
+    setSubmitting(false);
   };
 
-  const handleFormChange = (field: keyof UserFormData, value: string) => {
+  const handleFormChange = (
+    field: keyof UserFormData,
+    value: string | boolean
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async () => {
     setError(null);
+    setSubmitting(true);
 
     // Basic validation
-    if (!formData.email || !formData.first_name || !formData.last_name) {
+    if (
+      !formData.email ||
+      !formData.first_name ||
+      !formData.last_name ||
+      !formData.role_id
+    ) {
       setError("Please fill in all required fields");
+      setSubmitting(false);
       return;
     }
 
     if (!editingUser && !formData.password) {
       setError("Password is required for new users");
+      setSubmitting(false);
       return;
     }
 
     try {
-      // Mock API call - will be replaced with actual API
       if (editingUser) {
         // Update existing user
-        const updatedUser: User = {
-          ...editingUser,
-          ...formData,
+        const updateData: UpdateUserRequest = {
+          email: formData.email,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          role_id: formData.role_id,
+          status: formData.status,
+          language: formData.language,
+          theme: formData.theme,
+          email_notifications: formData.email_notifications,
         };
-        setUsers((prev) =>
-          prev.map((u) => (u.id === editingUser.id ? updatedUser : u))
-        );
+
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
+
+        await usersService.updateUser(editingUser.id, updateData);
       } else {
         // Create new user
-        const newUser: User = {
-          id: Math.max(...users.map((u) => u.id)) + 1,
-          ...formData,
-          created_at: new Date().toISOString(),
-          last_login: null,
+        const createData: CreateUserRequest = {
+          email: formData.email,
+          password: formData.password!,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          role_id: formData.role_id,
+          status: formData.status,
+          language: formData.language,
+          theme: formData.theme,
+          email_notifications: formData.email_notifications,
         };
-        setUsers((prev) => [...prev, newUser]);
+
+        await usersService.createUser(createData);
       }
 
+      // Refresh users list
+      await fetchUsers(currentPage);
       handleCloseDialog();
-    } catch (err) {
-      setError("Failed to save user");
+    } catch (err: any) {
+      setError(err.message || "Failed to save user");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleDelete = async (userId: number) => {
+  const handleDelete = async (userId: string) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
-      // Mock API call - will be replaced with actual API
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      try {
+        await usersService.deleteUser(userId);
+        // Refresh users list
+        await fetchUsers(currentPage);
+      } catch (err: any) {
+        setError(err.message || "Failed to delete user");
+      }
     }
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "Never";
     return new Date(dateString).toLocaleDateString();
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "admin":
+  const getRoleColor = (roleName: string) => {
+    switch (roleName.toLowerCase()) {
+      case "administrator":
         return "error";
       case "editor":
         return "warning";
+      case "moderator":
+        return "info";
       default:
         return "default";
     }
@@ -217,6 +280,12 @@ const Users: React.FC = () => {
 
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Box
         sx={{
           display: "flex",
@@ -226,12 +295,13 @@ const Users: React.FC = () => {
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-          Users
+          Users ({totalUsers})
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
+          disabled={loading}
         >
           Add User
         </Button>
@@ -246,60 +316,88 @@ const Users: React.FC = () => {
               <TableCell>Role</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Created</TableCell>
-              <TableCell>Last Login</TableCell>
+              <TableCell>Last Access</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: "medium" }}>
-                    {user.first_name} {user.last_name}
-                  </Typography>
-                </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={user.role}
-                    size="small"
-                    color={getRoleColor(user.role) as any}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={user.status}
-                    size="small"
-                    color={getStatusColor(user.status) as any}
-                  />
-                </TableCell>
-                <TableCell>{formatDate(user.created_at)}</TableCell>
-                <TableCell>{formatDate(user.last_login)}</TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" title="View">
-                    <ViewIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleOpenDialog(user)}
-                    title="Edit"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDelete(user.id)}
-                    title="Delete"
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  <CircularProgress />
                 </TableCell>
               </TableRow>
-            ))}
+            ) : users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No users found
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+                      {user.first_name} {user.last_name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={user.role_name}
+                      size="small"
+                      color={getRoleColor(user.role_name) as any}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={user.status}
+                      size="small"
+                      color={getStatusColor(user.status) as any}
+                    />
+                  </TableCell>
+                  <TableCell>{formatDate(user.created_at)}</TableCell>
+                  <TableCell>{formatDate(user.last_access)}</TableCell>
+                  <TableCell align="right">
+                    <IconButton size="small" title="View">
+                      <ViewIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenDialog(user)}
+                      title="Edit"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDelete(user.id)}
+                      title="Delete"
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={handlePageChange}
+            color="primary"
+          />
+        </Box>
+      )}
 
       <Dialog
         open={dialogOpen}
@@ -322,6 +420,7 @@ const Users: React.FC = () => {
               onChange={(e) => handleFormChange("email", e.target.value)}
               required
               fullWidth
+              disabled={submitting}
             />
             <Box sx={{ display: "flex", gap: 2 }}>
               <TextField
@@ -330,6 +429,7 @@ const Users: React.FC = () => {
                 onChange={(e) => handleFormChange("first_name", e.target.value)}
                 required
                 fullWidth
+                disabled={submitting}
               />
               <TextField
                 label="Last Name"
@@ -337,32 +437,38 @@ const Users: React.FC = () => {
                 onChange={(e) => handleFormChange("last_name", e.target.value)}
                 required
                 fullWidth
+                disabled={submitting}
               />
             </Box>
-            {!editingUser && (
-              <TextField
-                label="Password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleFormChange("password", e.target.value)}
-                required
-                fullWidth
-              />
-            )}
+            <TextField
+              label={
+                editingUser
+                  ? "New Password (leave blank to keep current)"
+                  : "Password"
+              }
+              type="password"
+              value={formData.password || ""}
+              onChange={(e) => handleFormChange("password", e.target.value)}
+              required={!editingUser}
+              fullWidth
+              disabled={submitting}
+            />
             <Box sx={{ display: "flex", gap: 2 }}>
-              <FormControl fullWidth>
+              <FormControl fullWidth disabled={submitting}>
                 <InputLabel>Role</InputLabel>
                 <Select
-                  value={formData.role}
+                  value={formData.role_id}
                   label="Role"
-                  onChange={(e) => handleFormChange("role", e.target.value)}
+                  onChange={(e) => handleFormChange("role_id", e.target.value)}
                 >
-                  <MenuItem value="user">User</MenuItem>
-                  <MenuItem value="editor">Editor</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
+                  {roles.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {role.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
-              <FormControl fullWidth>
+              <FormControl fullWidth disabled={submitting}>
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={formData.status}
@@ -374,12 +480,63 @@ const Users: React.FC = () => {
                 </Select>
               </FormControl>
             </Box>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <FormControl fullWidth disabled={submitting}>
+                <InputLabel>Language</InputLabel>
+                <Select
+                  value={formData.language || "en-US"}
+                  label="Language"
+                  onChange={(e) => handleFormChange("language", e.target.value)}
+                >
+                  <MenuItem value="en-US">English (US)</MenuItem>
+                  <MenuItem value="en-GB">English (UK)</MenuItem>
+                  <MenuItem value="es-ES">Spanish</MenuItem>
+                  <MenuItem value="fr-FR">French</MenuItem>
+                  <MenuItem value="de-DE">German</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth disabled={submitting}>
+                <InputLabel>Theme</InputLabel>
+                <Select
+                  value={formData.theme || "auto"}
+                  label="Theme"
+                  onChange={(e) => handleFormChange("theme", e.target.value)}
+                >
+                  <MenuItem value="auto">Auto</MenuItem>
+                  <MenuItem value="light">Light</MenuItem>
+                  <MenuItem value="dark">Dark</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <FormControl fullWidth disabled={submitting}>
+              <InputLabel>Email Notifications</InputLabel>
+              <Select
+                value={formData.email_notifications ? "true" : "false"}
+                label="Email Notifications"
+                onChange={(e) =>
+                  handleFormChange(
+                    "email_notifications",
+                    e.target.value === "true"
+                  )
+                }
+              >
+                <MenuItem value="true">Enabled</MenuItem>
+                <MenuItem value="false">Disabled</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editingUser ? "Update" : "Create"}
+          <Button onClick={handleCloseDialog} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={submitting}
+            startIcon={submitting ? <CircularProgress size={16} /> : null}
+          >
+            {submitting ? "Saving..." : editingUser ? "Update" : "Create"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -94,17 +94,25 @@ func (h *AuthHandler) login(c *gin.Context) {
 		return
 	}
 
-	// Query user from database (get ID as string, and also fetch role)
-	var userID string
+	// Query user from database (get complete user info)
+	var userID, roleID, roleName string
 	var passwordHash string
-	var role string
-	var firstName, lastName string
+	var firstName, lastName, avatar, language, theme, status, provider, externalIdentifier, tags *string
+	var lastAccess, lastPage *string
+	var emailNotifications bool
+	var createdAt, updatedAt time.Time
+
 	err := h.db.QueryRow(`
-		SELECT u.id, u.password, r.name as role, u.first_name, u.last_name 
+		SELECT u.id, u.password, u.first_name, u.last_name, u.avatar, 
+		       u.language, u.theme, u.status, u.role_id, r.name as role_name,
+		       u.last_access, u.last_page, u.provider, u.external_identifier,
+		       u.email_notifications, u.tags, u.created_at, u.updated_at
 		FROM users u 
 		JOIN roles r ON u.role_id = r.id 
 		WHERE u.email = $1 AND u.status = 'active'
-	`, req.Username).Scan(&userID, &passwordHash, &role, &firstName, &lastName)
+	`, req.Username).Scan(&userID, &passwordHash, &firstName, &lastName, &avatar,
+		&language, &theme, &status, &roleID, &roleName, &lastAccess, &lastPage,
+		&provider, &externalIdentifier, &emailNotifications, &tags, &createdAt, &updatedAt)
 
 	if err == sql.ErrNoRows {
 		logrus.WithField("username", req.Username).Warn("Login attempt with invalid username")
@@ -125,7 +133,7 @@ func (h *AuthHandler) login(c *gin.Context) {
 	}
 
 	// Generate JWT token
-	token, err := generateJWT(userID, req.Username, role)
+	token, err := generateJWT(userID, req.Username, roleName)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to generate JWT token")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -142,7 +150,7 @@ func (h *AuthHandler) login(c *gin.Context) {
 	logrus.WithFields(logrus.Fields{
 		"user_id": userID,
 		"email":   req.Username,
-		"role":    role,
+		"role":    roleName,
 	}).Info("User logged in successfully")
 
 	c.JSON(http.StatusOK, gin.H{
@@ -150,11 +158,24 @@ func (h *AuthHandler) login(c *gin.Context) {
 		"token_type":   "Bearer",
 		"expires_in":   86400, // 24 hours in seconds
 		"user": gin.H{
-			"id":         userID,
-			"email":      req.Username,
-			"first_name": firstName,
-			"last_name":  lastName,
-			"role":       role,
+			"id":                  userID,
+			"email":               req.Username,
+			"first_name":          firstName,
+			"last_name":           lastName,
+			"avatar":              avatar,
+			"language":            language,
+			"theme":               theme,
+			"status":              status,
+			"role_id":             roleID,
+			"role_name":           roleName,
+			"last_access":         lastAccess,
+			"last_page":           lastPage,
+			"provider":            provider,
+			"external_identifier": externalIdentifier,
+			"email_notifications": emailNotifications,
+			"tags":                tags,
+			"created_at":          createdAt,
+			"updated_at":          updatedAt,
 		},
 	})
 }
@@ -164,6 +185,7 @@ func (h *AuthHandler) logout(c *gin.Context) {
 	// For server-side logout, you would need a token blacklist/revocation mechanism
 	// For now, we'll just return success
 	logrus.WithField("user_id", c.GetString("user_id")).Info("User logged out")
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 }
 
@@ -192,22 +214,38 @@ func (h *AuthHandler) getCurrentUser(c *gin.Context) {
 	userID := c.GetString("user_id")
 
 	var user struct {
-		ID         string     `json:"id"`
-		Email      string     `json:"email"`
-		FirstName  string     `json:"first_name"`
-		LastName   string     `json:"last_name"`
-		Role       string     `json:"role"`
-		Status     string     `json:"status"`
-		CreatedAt  time.Time  `json:"created_at"`
-		LastAccess *time.Time `json:"last_access"`
+		ID                 string     `json:"id"`
+		Email              string     `json:"email"`
+		FirstName          *string    `json:"first_name"`
+		LastName           *string    `json:"last_name"`
+		Avatar             *string    `json:"avatar"`
+		Language           *string    `json:"language"`
+		Theme              *string    `json:"theme"`
+		Status             *string    `json:"status"`
+		RoleID             string     `json:"role_id"`
+		RoleName           string     `json:"role_name"`
+		LastAccess         *time.Time `json:"last_access"`
+		LastPage           *string    `json:"last_page"`
+		Provider           *string    `json:"provider"`
+		ExternalIdentifier *string    `json:"external_identifier"`
+		EmailNotifications bool       `json:"email_notifications"`
+		Tags               *string    `json:"tags"`
+		CreatedAt          time.Time  `json:"created_at"`
+		UpdatedAt          time.Time  `json:"updated_at"`
 	}
 
 	err := h.db.QueryRow(`
-		SELECT u.id, u.email, u.first_name, u.last_name, r.name as role, u.status, u.created_at, u.last_access
+		SELECT u.id, u.email, u.first_name, u.last_name, u.avatar,
+		       u.language, u.theme, u.status, u.role_id, r.name as role_name,
+		       u.last_access, u.last_page, u.provider, u.external_identifier,
+		       u.email_notifications, u.tags, u.created_at, u.updated_at
 		FROM users u 
 		JOIN roles r ON u.role_id = r.id 
 		WHERE u.id = $1
-	`, userID).Scan(&user.ID, &user.Email, &user.FirstName, &user.LastName, &user.Role, &user.Status, &user.CreatedAt, &user.LastAccess)
+	`, userID).Scan(&user.ID, &user.Email, &user.FirstName, &user.LastName, &user.Avatar,
+		&user.Language, &user.Theme, &user.Status, &user.RoleID, &user.RoleName,
+		&user.LastAccess, &user.LastPage, &user.Provider, &user.ExternalIdentifier,
+		&user.EmailNotifications, &user.Tags, &user.CreatedAt, &user.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
