@@ -283,6 +283,7 @@ func (s *Server) setupRoutes() {
 		itemsHandler := NewItemsHandler(s)
 		usersHandler := NewUsersHandler(s)
 		rolesHandler := NewRolesHandler(s)
+		dashboardHandler := NewDashboardHandler(s)
 
 		// Setup routes for each handler
 		authHandler.SetupRoutes(v1)
@@ -290,6 +291,7 @@ func (s *Server) setupRoutes() {
 		itemsHandler.SetupRoutes(v1)
 		usersHandler.SetupRoutes(v1)
 		rolesHandler.SetupRoutes(v1)
+		dashboardHandler.SetupRoutes(v1)
 	}
 
 	// Static files and admin interface

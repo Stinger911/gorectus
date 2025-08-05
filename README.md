@@ -5,6 +5,7 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 ## Features
 
 ### Backend (Go)
+
 - **RESTful API** built with Gin framework
 - **PostgreSQL** database with migration support
 - **JWT Authentication** for secure API access
@@ -13,6 +14,7 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 - **Docker Compose** setup for easy development
 
 ### Frontend (React)
+
 - **Modern React 18** with TypeScript
 - **Material-UI (MUI)** for beautiful, responsive design
 - **React Router** for client-side navigation
@@ -20,6 +22,7 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 - **Admin Dashboard** with comprehensive management tools
 
 ### Key Management Features
+
 - **User Management** - Create, edit, and manage users with role-based access
 - **Collection Management** - Define dynamic data structures with custom fields
 - **Settings Panel** - Configure system settings, database, email, and security
@@ -28,6 +31,7 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 ## Quick Start
 
 ### Prerequisites
+
 - Go 1.20+
 - PostgreSQL 13+
 - Node.js 18+
@@ -36,17 +40,20 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 ### Backend Setup
 
 1. **Start PostgreSQL with Docker Compose:**
+
    ```bash
    docker-compose up -d
    ```
 
 2. **Set up environment variables:**
+
    ```bash
    cp .env.example .env
    # Edit .env with your database credentials
    ```
 
 3. **Run database migrations:**
+
    ```bash
    make migrate-up
    ```
@@ -60,12 +67,14 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 ### Frontend Setup
 
 1. **Install dependencies:**
+
    ```bash
    cd frontend
    npm install
    ```
 
 2. **Start the development server:**
+
    ```bash
    npm start
    ```
@@ -77,11 +86,13 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
 - `GET /api/auth/me` - Get current user info
 
 ### Users
+
 - `GET /api/users` - List all users
 - `POST /api/users` - Create new user
 - `GET /api/users/:id` - Get user by ID
@@ -89,6 +100,7 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 - `DELETE /api/users/:id` - Delete user
 
 ### Collections
+
 - `GET /api/collections` - List all collections
 - `POST /api/collections` - Create new collection
 - `GET /api/collections/:id` - Get collection by ID
@@ -96,11 +108,20 @@ A modern, headless CMS built with Go and React, inspired by Directus. GoRectus p
 - `DELETE /api/collections/:id` - Delete collection
 
 ### Items (Dynamic endpoints based on collections)
+
 - `GET /api/items/:collection` - List items in collection
 - `POST /api/items/:collection` - Create new item
 - `GET /api/items/:collection/:id` - Get item by ID
 - `PUT /api/items/:collection/:id` - Update item
 - `DELETE /api/items/:collection/:id` - Delete item
+
+### Dashboard (Admin Only)
+
+- `GET /api/v1/dashboard` - Get complete dashboard overview with all metrics
+- `GET /api/v1/dashboard/stats` - Get system statistics (users, roles, collections, sessions)
+- `GET /api/v1/dashboard/activity` - Get recent activity log (supports `?limit=N` parameter)
+- `GET /api/v1/dashboard/users` - Get user insights and analytics
+- `GET /api/v1/dashboard/collections` - Get collection metrics and insights
 
 ## Development
 
@@ -147,12 +168,14 @@ make clean           # Clean build artifacts
 ## Testing
 
 The backend includes comprehensive tests covering:
+
 - API endpoints and middleware
 - Database operations with mocked connections
 - Authentication and authorization flows
 - Migration functionality
 
 Run tests with:
+
 ```bash
 make test
 make test-coverage
@@ -163,6 +186,7 @@ Current test coverage: **59%+**
 ## Database Schema
 
 ### Core Tables
+
 - **users** - System users with authentication
 - **roles** - User roles and permissions
 - **collections** - Dynamic collection definitions
@@ -170,7 +194,9 @@ Current test coverage: **59%+**
 - **settings** - System configuration
 
 ### Sample Data
+
 The initial migration includes:
+
 - Admin user (`admin@gorectus.local` / `admin123`)
 - Basic roles (admin, editor, user)
 - System settings
@@ -178,6 +204,7 @@ The initial migration includes:
 ## Configuration
 
 ### Environment Variables
+
 - `DB_HOST` - Database host (default: localhost)
 - `DB_PORT` - Database port (default: 5432)
 - `DB_NAME` - Database name (default: gorectus)
