@@ -284,6 +284,7 @@ func (s *Server) setupRoutes() {
 		// Initialize route handlers
 		authHandler := NewAuthHandler(s)
 		collectionsHandler := NewCollectionsHandler(s)
+		fieldsHandler := NewFieldsHandler(s)
 		itemsHandler := NewItemsHandler(s)
 		usersHandler := NewUsersHandler(s)
 		rolesHandler := NewRolesHandler(s)
@@ -292,6 +293,7 @@ func (s *Server) setupRoutes() {
 		// Setup routes for each handler
 		authHandler.SetupRoutes(v1)
 		collectionsHandler.SetupRoutes(v1)
+		fieldsHandler.SetupRoutes(v1)
 		itemsHandler.SetupRoutes(v1)
 		usersHandler.SetupRoutes(v1)
 		rolesHandler.SetupRoutes(v1)
