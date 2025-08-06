@@ -81,6 +81,19 @@ func (h *AuthHandler) authMiddleware() gin.HandlerFunc {
 	}
 }
 
+// Login authenticates a user and returns a JWT token
+//
+//	@Summary		User login
+//	@Description	Authenticate user credentials and return JWT token
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			credentials	body		LoginRequest		true	"User credentials"
+//	@Success		200			{object}	LoginResponse		"Successful login"
+//	@Failure		400			{object}	ErrorResponse		"Invalid request payload"
+//	@Failure		401			{object}	ErrorResponse		"Invalid credentials"
+//	@Failure		500			{object}	ErrorResponse		"Internal server error"
+//	@Router			/auth/login [post]
 func (h *AuthHandler) login(c *gin.Context) {
 	var req struct {
 		Username string `json:"email" binding:"required"`
@@ -180,6 +193,17 @@ func (h *AuthHandler) login(c *gin.Context) {
 	})
 }
 
+// Logout logs out the current user
+//
+//	@Summary		User logout
+//	@Description	Log out the current user (client-side token removal)
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	SuccessMessage	"Successful logout"
+//	@Failure		401	{object}	ErrorResponse	"Unauthorized"
+//	@Router			/auth/logout [post]
 func (h *AuthHandler) logout(c *gin.Context) {
 	// With JWT, logout is typically handled client-side by discarding the token
 	// For server-side logout, you would need a token blacklist/revocation mechanism
@@ -189,6 +213,18 @@ func (h *AuthHandler) logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 }
 
+// Refresh generates a new JWT token for the current user
+//
+//	@Summary		Refresh JWT token
+//	@Description	Generate a new JWT token using the current valid token
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	LoginResponse	"New token generated"
+//	@Failure		401	{object}	ErrorResponse	"Unauthorized"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/auth/refresh [post]
 func (h *AuthHandler) refresh(c *gin.Context) {
 	// Get current user from token
 	userID := c.GetString("user_id")
@@ -210,6 +246,19 @@ func (h *AuthHandler) refresh(c *gin.Context) {
 	})
 }
 
+// GetCurrentUser returns the current authenticated user's information
+//
+//	@Summary		Get current user
+//	@Description	Get the current authenticated user's profile information
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	UserModel		"Current user information"
+//	@Failure		401	{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404	{object}	ErrorResponse	"User not found"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/auth/me [get]
 func (h *AuthHandler) getCurrentUser(c *gin.Context) {
 	userID := c.GetString("user_id")
 

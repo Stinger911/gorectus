@@ -152,6 +152,18 @@ func (h *CollectionsHandler) isAdmin(c *gin.Context) bool {
 }
 
 // Collections handlers implementations
+// GetCollections retrieves all collections
+//
+//	@Summary		Get all collections
+//	@Description	Retrieve a list of all collections in the system
+//	@Tags			collections
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{array}		CollectionModel	"List of collections"
+//	@Failure		401	{object}	ErrorResponse	"Unauthorized"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/collections [get]
 func (h *CollectionsHandler) getCollections(c *gin.Context) {
 	// Parse query parameters for pagination
 	page := 1
@@ -240,6 +252,21 @@ func (h *CollectionsHandler) getCollections(c *gin.Context) {
 	})
 }
 
+// CreateCollection creates a new collection
+//
+//	@Summary		Create a new collection
+//	@Description	Create a new collection in the system
+//	@Tags			collections
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	body		CollectionModel	true	"Collection data"
+//	@Success		201			{object}	CollectionModel	"Created collection"
+//	@Failure		400			{object}	ErrorResponse	"Invalid request payload"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		409			{object}	ErrorResponse	"Collection already exists"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/collections [post]
 func (h *CollectionsHandler) createCollection(c *gin.Context) {
 	// Only admins can create collections
 	if !h.isAdmin(c) {
@@ -440,6 +467,20 @@ func (h *CollectionsHandler) createCollection(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": collection})
 }
 
+// GetCollection retrieves a specific collection by name
+//
+//	@Summary		Get collection by name
+//	@Description	Retrieve a specific collection by its name
+//	@Tags			collections
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string			true	"Collection name"
+//	@Success		200			{object}	CollectionModel	"Collection details"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Collection not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/collections/{collection} [get]
 func (h *CollectionsHandler) getCollection(c *gin.Context) {
 	collectionName := c.Param("collection")
 

@@ -1,0 +1,512 @@
+basePath: /api/v1
+definitions:
+  main.CollectionModel:
+    properties:
+      created_at:
+        example: "2023-01-01T10:30:00Z"
+        type: string
+      description:
+        example: Product catalog collection
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      name:
+        example: Products
+        type: string
+      schema:
+        example: '{}'
+        type: string
+      updated_at:
+        example: "2023-12-01T10:30:00Z"
+        type: string
+    type: object
+  main.ErrorResponse:
+    properties:
+      error:
+        example: Invalid request payload
+        type: string
+    type: object
+  main.ItemData:
+    type: object
+  main.ItemModel:
+    properties:
+      collection_id:
+        example: 456e7890-e89b-12d3-a456-426614174001
+        type: string
+      created_at:
+        example: "2023-01-01T10:30:00Z"
+        type: string
+      data:
+        $ref: '#/definitions/main.ItemData'
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      updated_at:
+        example: "2023-12-01T10:30:00Z"
+        type: string
+    type: object
+  main.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  main.LoginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 86400
+        type: integer
+      token_type:
+        example: Bearer
+        type: string
+      user:
+        $ref: '#/definitions/main.UserModel'
+    type: object
+  main.SuccessMessage:
+    properties:
+      message:
+        example: Operation completed successfully
+        type: string
+    type: object
+  main.UserModel:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      created_at:
+        example: "2023-01-01T10:30:00Z"
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      email_notifications:
+        example: true
+        type: boolean
+      external_identifier:
+        type: string
+      first_name:
+        example: John
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      language:
+        example: en
+        type: string
+      last_access:
+        example: "2023-12-01T10:30:00Z"
+        type: string
+      last_name:
+        example: Doe
+        type: string
+      last_page:
+        example: /dashboard
+        type: string
+      provider:
+        example: local
+        type: string
+      role_id:
+        example: 456e7890-e89b-12d3-a456-426614174001
+        type: string
+      role_name:
+        example: admin
+        type: string
+      status:
+        example: active
+        type: string
+      tags:
+        example: admin,power-user
+        type: string
+      theme:
+        example: light
+        type: string
+      updated_at:
+        example: "2023-12-01T10:30:00Z"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@gorectus.com
+    name: GoRectus API Support
+  description: A comprehensive API for managing collections, items, fields, users,
+    and roles
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: GoRectus API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user credentials and return JWT token
+      parameters:
+      - description: User credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/main.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful login
+          schema:
+            $ref: '#/definitions/main.LoginResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: User login
+      tags:
+      - authentication
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Log out the current user (client-side token removal)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful logout
+          schema:
+            $ref: '#/definitions/main.SuccessMessage'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - authentication
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Get the current authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Current user information
+          schema:
+            $ref: '#/definitions/main.UserModel'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - authentication
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generate a new JWT token using the current valid token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New token generated
+          schema:
+            $ref: '#/definitions/main.LoginResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Refresh JWT token
+      tags:
+      - authentication
+  /collections:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all collections in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of collections
+          schema:
+            items:
+              $ref: '#/definitions/main.CollectionModel'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all collections
+      tags:
+      - collections
+    post:
+      consumes:
+      - application/json
+      description: Create a new collection in the system
+      parameters:
+      - description: Collection data
+        in: body
+        name: collection
+        required: true
+        schema:
+          $ref: '#/definitions/main.CollectionModel'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created collection
+          schema:
+            $ref: '#/definitions/main.CollectionModel'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "409":
+          description: Collection already exists
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new collection
+      tags:
+      - collections
+  /collections/{collection}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific collection by its name
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Collection details
+          schema:
+            $ref: '#/definitions/main.CollectionModel'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Collection not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get collection by name
+      tags:
+      - collections
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Get the health status of the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Health status
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - health
+  /items/{collection}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all items from a specific collection
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Limit the number of results
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of items
+          schema:
+            items:
+              $ref: '#/definitions/main.ItemModel'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Collection not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all items from a collection
+      tags:
+      - items
+    post:
+      consumes:
+      - application/json
+      description: Create a new item in a specific collection
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Item data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/main.ItemModel'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created item
+          schema:
+            $ref: '#/definitions/main.ItemModel'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Collection not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new item
+      tags:
+      - items
+  /items/{collection}/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific item from a collection by its ID
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item details
+          schema:
+            $ref: '#/definitions/main.ItemModel'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Item not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get item by ID
+      tags:
+      - items
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

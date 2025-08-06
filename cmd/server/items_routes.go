@@ -75,6 +75,22 @@ func (h *ItemsHandler) checkCollectionExists(collectionName string) error {
 }
 
 // Items handlers implementations
+// GetItems retrieves all items from a collection
+//
+//	@Summary		Get all items from a collection
+//	@Description	Retrieve a list of all items from a specific collection
+//	@Tags			items
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string		true	"Collection name"
+//	@Param			limit		query		int			false	"Limit the number of results"
+//	@Param			offset		query		int			false	"Offset for pagination"
+//	@Success		200			{array}		ItemModel	"List of items"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Collection not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/items/{collection} [get]
 func (h *ItemsHandler) getItems(c *gin.Context) {
 	collectionName := c.Param("collection")
 
@@ -187,6 +203,22 @@ func (h *ItemsHandler) getItems(c *gin.Context) {
 	})
 }
 
+// CreateItem creates a new item in a collection
+//
+//	@Summary		Create a new item
+//	@Description	Create a new item in a specific collection
+//	@Tags			items
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string		true	"Collection name"
+//	@Param			item		body		ItemModel	true	"Item data"
+//	@Success		201			{object}	ItemModel	"Created item"
+//	@Failure		400			{object}	ErrorResponse	"Invalid request payload"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Collection not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/items/{collection} [post]
 func (h *ItemsHandler) createItem(c *gin.Context) {
 	// Only admins can create items
 	if !h.isAdmin(c) {
@@ -297,6 +329,21 @@ func (h *ItemsHandler) createItem(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": item})
 }
 
+// GetItem retrieves a specific item from a collection
+//
+//	@Summary		Get item by ID
+//	@Description	Retrieve a specific item from a collection by its ID
+//	@Tags			items
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string		true	"Collection name"
+//	@Param			id			path		string		true	"Item ID"
+//	@Success		200			{object}	ItemModel	"Item details"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Item not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/items/{collection}/{id} [get]
 func (h *ItemsHandler) getItem(c *gin.Context) {
 	collectionName := c.Param("collection")
 	itemID := c.Param("id")
