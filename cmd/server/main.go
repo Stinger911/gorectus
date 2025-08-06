@@ -309,6 +309,7 @@ func (s *Server) setupRoutes() {
 		usersHandler := NewUsersHandler(s)
 		rolesHandler := NewRolesHandler(s)
 		dashboardHandler := NewDashboardHandler(s)
+		settingsHandler := NewSettingsHandler(s)
 
 		// Setup routes for each handler
 		authHandler.SetupRoutes(v1)
@@ -318,6 +319,7 @@ func (s *Server) setupRoutes() {
 		usersHandler.SetupRoutes(v1)
 		rolesHandler.SetupRoutes(v1)
 		dashboardHandler.SetupRoutes(v1)
+		settingsHandler.SetupRoutes(v1)
 	}
 
 	// Swagger documentation endpoint

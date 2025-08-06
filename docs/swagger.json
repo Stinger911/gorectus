@@ -1529,6 +1529,205 @@
                     }
                 }
             }
+        },
+        "/settings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve current system settings (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get system settings",
+                "responses": {
+                    "200": {
+                        "description": "Current settings",
+                        "schema": {
+                            "$ref": "#/definitions/main.SettingsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Admin access required",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update system settings (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update system settings",
+                "parameters": [
+                    {
+                        "description": "Settings to update",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.UpdateSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated settings",
+                        "schema": {
+                            "$ref": "#/definitions/main.SettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Admin access required",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/test-connection": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Test the database connection with current settings (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Test database connection",
+                "responses": {
+                    "200": {
+                        "description": "Connection successful",
+                        "schema": {
+                            "$ref": "#/definitions/main.SuccessMessage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Admin access required",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Connection failed",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/test-email": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send a test email with current SMTP settings (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Test email configuration",
+                "responses": {
+                    "200": {
+                        "description": "Test email sent",
+                        "schema": {
+                            "$ref": "#/definitions/main.SuccessMessage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Admin access required",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Email test failed",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1923,6 +2122,82 @@
                 }
             }
         },
+        "main.Settings": {
+            "type": "object",
+            "properties": {
+                "allow_registration": {
+                    "type": "boolean"
+                },
+                "database_host": {
+                    "description": "Database Settings (read-only for security)",
+                    "type": "string"
+                },
+                "database_name": {
+                    "type": "string"
+                },
+                "database_port": {
+                    "type": "string"
+                },
+                "database_user": {
+                    "type": "string"
+                },
+                "email_enabled": {
+                    "type": "boolean"
+                },
+                "jwt_secret_exists": {
+                    "description": "Don't expose actual secret",
+                    "type": "boolean"
+                },
+                "maintenance_mode": {
+                    "type": "boolean"
+                },
+                "password_min_length": {
+                    "type": "integer"
+                },
+                "require_two_factor": {
+                    "type": "boolean"
+                },
+                "session_timeout": {
+                    "description": "Security Settings (some fields read-only for security)",
+                    "type": "integer"
+                },
+                "site_description": {
+                    "type": "string"
+                },
+                "site_name": {
+                    "description": "General Settings",
+                    "type": "string"
+                },
+                "smtp_from_email": {
+                    "type": "string"
+                },
+                "smtp_host": {
+                    "description": "Email Settings",
+                    "type": "string"
+                },
+                "smtp_port": {
+                    "type": "string"
+                },
+                "smtp_user": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "Metadata",
+                    "type": "string"
+                },
+                "updated_by": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.SettingsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.Settings"
+                }
+            }
+        },
         "main.SuccessMessage": {
             "type": "object",
             "properties": {
@@ -2077,6 +2352,53 @@
                     "type": "string"
                 },
                 "width": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.UpdateSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "allow_registration": {
+                    "type": "boolean"
+                },
+                "email_enabled": {
+                    "type": "boolean"
+                },
+                "jwt_secret": {
+                    "description": "Security Settings",
+                    "type": "string"
+                },
+                "maintenance_mode": {
+                    "type": "boolean"
+                },
+                "password_min_length": {
+                    "type": "integer"
+                },
+                "require_two_factor": {
+                    "type": "boolean"
+                },
+                "session_timeout": {
+                    "type": "integer"
+                },
+                "site_description": {
+                    "type": "string"
+                },
+                "site_name": {
+                    "description": "General Settings",
+                    "type": "string"
+                },
+                "smtp_from_email": {
+                    "type": "string"
+                },
+                "smtp_host": {
+                    "description": "Email Settings",
+                    "type": "string"
+                },
+                "smtp_port": {
+                    "type": "string"
+                },
+                "smtp_user": {
                     "type": "string"
                 }
             }
