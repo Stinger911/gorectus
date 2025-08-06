@@ -109,3 +109,13 @@ type DashboardStatsResponse struct {
 	TotalItems       int64 `json:"total_items" example:"1500"`
 	ActiveUsers      int64 `json:"active_users" example:"75"`
 }
+
+// DataResponse represents a generic response with data field
+type DataResponse[T any] struct {
+	Data T `json:"data"`
+}
+
+// MessageResponse represents a response with a message field
+type MessageResponse struct {
+	Message string `json:"message" example:"Operation completed successfully"`
+}

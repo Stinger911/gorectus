@@ -511,6 +511,22 @@ func (h *CollectionsHandler) getCollection(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": result})
 }
 
+// updateCollection updates an existing collection
+//
+//	@Summary		Update an existing collection
+//	@Description	Update an existing collection in the system
+//	@Tags			collections
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string				true	"Collection name"
+//	@Param			body		body		UpdateCollectionRequest	true	"Fields to update"
+//	@Success		200			{object}	CollectionModel	"Updated collection"
+//	@Failure		400			{object}	ErrorResponse	"Invalid request payload"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Collection not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/collections/{collection} [patch]
 func (h *CollectionsHandler) updateCollection(c *gin.Context) {
 	// Only admins can update collections
 	if !h.isAdmin(c) {
@@ -671,6 +687,22 @@ func (h *CollectionsHandler) updateCollection(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": collection})
 }
 
+// deleteCollection deletes a collection by name
+//
+//	@Summary		Delete a collection by name
+//	@Description	Delete a specific collection by its name
+//	@Tags			collections
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string	true	"Collection name"
+//	@Success		200			{object}	SuccessMessage	"Collection deleted successfully"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		403			{object}	ErrorResponse	"Forbidden"
+//	@Failure		404			{object}	ErrorResponse	"Collection not found"
+//	@Failure		400			{object}	ErrorResponse	"Bad request - cannot delete system collection"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/collections/{collection} [delete]
 func (h *CollectionsHandler) deleteCollection(c *gin.Context) {
 	// Only admins can delete collections
 	if !h.isAdmin(c) {

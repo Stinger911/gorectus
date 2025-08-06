@@ -50,7 +50,7 @@ func (h *DashboardHandler) SetupRoutes(v1 *gin.RouterGroup) {
 // Dashboard data structures
 type DashboardOverview struct {
 	SystemStats       SystemStats       `json:"system_stats"`
-	UserInsights      UserInsights      `json:"user_insights"`
+	UserInsights      *UserInsights     `json:"user_insights,omitempty"`
 	CollectionMetrics CollectionMetrics `json:"collection_metrics"`
 	RecentActivity    []ActivityItem    `json:"recent_activity"`
 	SystemHealth      SystemHealth      `json:"system_health"`
@@ -126,14 +126,19 @@ func (h *DashboardHandler) isAdmin(c *gin.Context) bool {
 	return currentUserRole == "Administrator"
 }
 
-// Dashboard handlers implementations
+// GetDashboardOverview retrieves comprehensive dashboard overview data
+//
+//	@Summary		Get dashboard overview
+//	@Description	Retrieve comprehensive dashboard overview including system stats, collection metrics, recent activity, system health, and user insights (user insights only available for admins)
+//	@Tags			dashboard
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	map[string]DashboardOverview	"Dashboard overview data"
+//	@Failure		401	{object}	map[string]string				"Unauthorized"
+//	@Failure		500	{object}	map[string]string				"Internal server error"
+//	@Router			/dashboard [get]
 func (h *DashboardHandler) getDashboardOverview(c *gin.Context) {
-	// Check if user has access to dashboard
-	if !h.isAdmin(c) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
-		return
-	}
-
 	// Get all dashboard data
 	systemStats, err := h.getSystemStatsData()
 	if err != nil {
@@ -142,11 +147,16 @@ func (h *DashboardHandler) getDashboardOverview(c *gin.Context) {
 		return
 	}
 
-	userInsights, err := h.getUserInsightsData()
-	if err != nil {
-		logrus.WithError(err).Error("Error fetching user insights")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-		return
+	// Only fetch user insights for admins
+	var userInsights *UserInsights
+	if h.isAdmin(c) {
+		insights, err := h.getUserInsightsData()
+		if err != nil {
+			logrus.WithError(err).Error("Error fetching user insights")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+		userInsights = &insights
 	}
 
 	collectionMetrics, err := h.getCollectionMetricsData()
@@ -176,13 +186,19 @@ func (h *DashboardHandler) getDashboardOverview(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": overview})
 }
 
+// GetSystemStats retrieves system statistics
+//
+//	@Summary		Get system statistics
+//	@Description	Retrieve system statistics including user counts, role counts, collection counts, and active sessions
+//	@Tags			dashboard
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	map[string]SystemStats	"System statistics"
+//	@Failure		401	{object}	map[string]string		"Unauthorized"
+//	@Failure		500	{object}	map[string]string		"Internal server error"
+//	@Router			/dashboard/stats [get]
 func (h *DashboardHandler) getSystemStats(c *gin.Context) {
-	// Check if user has access to dashboard
-	if !h.isAdmin(c) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
-		return
-	}
-
 	stats, err := h.getSystemStatsData()
 	if err != nil {
 		logrus.WithError(err).Error("Error fetching system stats")
@@ -193,13 +209,20 @@ func (h *DashboardHandler) getSystemStats(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": stats})
 }
 
+// GetRecentActivity retrieves recent system activity
+//
+//	@Summary		Get recent activity
+//	@Description	Retrieve recent system activity with optional limit parameter
+//	@Tags			dashboard
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			limit	query		int						false	"Maximum number of activity items to return (1-100, default: 20)"
+//	@Success		200		{object}	map[string][]ActivityItem	"Recent activity data"
+//	@Failure		401		{object}	map[string]string			"Unauthorized"
+//	@Failure		500		{object}	map[string]string			"Internal server error"
+//	@Router			/dashboard/activity [get]
 func (h *DashboardHandler) getRecentActivity(c *gin.Context) {
-	// Check if user has access to dashboard
-	if !h.isAdmin(c) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
-		return
-	}
-
 	// Parse limit parameter
 	limit := 20
 	if limitStr := c.Query("limit"); limitStr != "" {
@@ -218,8 +241,21 @@ func (h *DashboardHandler) getRecentActivity(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": activity})
 }
 
+// GetUserInsights retrieves user insights and analytics
+//
+//	@Summary		Get user insights
+//	@Description	Retrieve user insights including user distribution by status and role, new user statistics, and user activity data (Admin only)
+//	@Tags			dashboard
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	map[string]UserInsights	"User insights data"
+//	@Failure		401	{object}	map[string]string		"Unauthorized"
+//	@Failure		403	{object}	map[string]string		"Forbidden - Admin access required"
+//	@Failure		500	{object}	map[string]string		"Internal server error"
+//	@Router			/dashboard/users [get]
 func (h *DashboardHandler) getUserInsights(c *gin.Context) {
-	// Check if user has access to dashboard
+	// Check if user is admin
 	if !h.isAdmin(c) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
 		return
@@ -235,13 +271,19 @@ func (h *DashboardHandler) getUserInsights(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": insights})
 }
 
+// GetCollectionInsights retrieves collection metrics and analytics
+//
+//	@Summary		Get collection insights
+//	@Description	Retrieve collection metrics including total collections, distribution by type, and activity data
+//	@Tags			dashboard
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	map[string]CollectionMetrics	"Collection metrics data"
+//	@Failure		401	{object}	map[string]string				"Unauthorized"
+//	@Failure		500	{object}	map[string]string				"Internal server error"
+//	@Router			/dashboard/collections [get]
 func (h *DashboardHandler) getCollectionInsights(c *gin.Context) {
-	// Check if user has access to dashboard
-	if !h.isAdmin(c) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
-		return
-	}
-
 	metrics, err := h.getCollectionMetricsData()
 	if err != nil {
 		logrus.WithError(err).Error("Error fetching collection metrics")

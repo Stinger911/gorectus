@@ -371,6 +371,23 @@ func (h *ItemsHandler) getItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": item})
 }
 
+// updateItem updates an existing item in a collection
+//
+//	@Summary		Update an existing item
+//	@Description	Update an existing item in a specific collection
+//	@Tags			items
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string		true	"Collection name"
+//	@Param			id			path		string		true	"Item ID"
+//	@Param			item		body		ItemModel	true	"Updated item data"
+//	@Success		200			{object}	ItemModel	"Updated item"
+//	@Failure		400			{object}	ErrorResponse	"Invalid request payload"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Item not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/items/{collection}/{id} [patch]
 func (h *ItemsHandler) updateItem(c *gin.Context) {
 	// Only admins can update items
 	if !h.isAdmin(c) {
@@ -476,6 +493,21 @@ func (h *ItemsHandler) updateItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": item})
 }
 
+// deleteItem deletes an item from a collection
+//
+//	@Summary		Delete an item
+//	@Description	Delete a specific item from a collection by its ID
+//	@Tags			items
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string		true	"Collection name"
+//	@Param			id			path		string		true	"Item ID"
+//	@Success		200			{object}	SuccessMessage	"Success message"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Item not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/items/{collection}/{id} [delete]
 func (h *ItemsHandler) deleteItem(c *gin.Context) {
 	// Only admins can delete items
 	if !h.isAdmin(c) {

@@ -148,6 +148,20 @@ func (h *FieldsHandler) isAdmin(c *gin.Context) bool {
 }
 
 // getFields returns all fields in the system with optional filtering
+//
+//	@Summary		Get all fields
+//	@Description	Retrieve a paginated list of all fields in the system with optional collection filtering
+//	@Tags			fields
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			page		query		int		false	"Page number for pagination (default: 1)"
+//	@Param			limit		query		int		false	"Number of items per page (max: 100, default: 50)"
+//	@Param			collection	query		string	false	"Filter fields by collection name"
+//	@Success		200			{object}	FieldsListResponse	"List of fields with pagination metadata"
+//	@Failure		401			{object}	ErrorResponse		"Unauthorized"
+//	@Failure		500			{object}	ErrorResponse		"Internal server error"
+//	@Router			/fields [get]
 func (h *FieldsHandler) getFields(c *gin.Context) {
 	// Parse query parameters
 	page := 1
@@ -234,6 +248,19 @@ func (h *FieldsHandler) getFields(c *gin.Context) {
 }
 
 // getFieldsByCollection returns all fields for a specific collection
+//
+//	@Summary		Get fields by collection
+//	@Description	Retrieve all fields for a specific collection
+//	@Tags			fields
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string	true	"Collection name"
+//	@Success		200			{object}	map[string][]FieldDetail	"List of fields for the collection"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Collection not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/fields/{collection} [get]
 func (h *FieldsHandler) getFieldsByCollection(c *gin.Context) {
 	collectionName := c.Param("collection")
 
@@ -261,6 +288,20 @@ func (h *FieldsHandler) getFieldsByCollection(c *gin.Context) {
 }
 
 // getField returns a specific field
+//
+//	@Summary		Get field by name
+//	@Description	Retrieve a specific field by collection and field name
+//	@Tags			fields
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string	true	"Collection name"
+//	@Param			field		path		string	true	"Field name"
+//	@Success		200			{object}	map[string]FieldDetail	"Field details"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		404			{object}	ErrorResponse	"Field not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/fields/{collection}/{field} [get]
 func (h *FieldsHandler) getField(c *gin.Context) {
 	collectionName := c.Param("collection")
 	fieldName := c.Param("field")
@@ -279,6 +320,23 @@ func (h *FieldsHandler) getField(c *gin.Context) {
 }
 
 // createField creates a new field in a collection
+//
+//	@Summary		Create a new field
+//	@Description	Create a new field in a collection with optional database column creation
+//	@Tags			fields
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string				true	"Collection name"
+//	@Param			field		body		CreateFieldRequest	true	"Field creation data"
+//	@Success		201			{object}	map[string]FieldDetail	"Created field details"
+//	@Failure		400			{object}	ErrorResponse	"Bad request (invalid payload, field name, or field already exists)"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		403			{object}	ErrorResponse	"Forbidden (admin access required)"
+//	@Failure		404			{object}	ErrorResponse	"Collection not found"
+//	@Failure		409			{object}	ErrorResponse	"Field already exists"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/fields/{collection} [post]
 func (h *FieldsHandler) createField(c *gin.Context) {
 	// Only admins can create fields
 	if !h.isAdmin(c) {
@@ -439,6 +497,23 @@ func (h *FieldsHandler) createField(c *gin.Context) {
 }
 
 // updateField updates an existing field
+//
+//	@Summary		Update an existing field
+//	@Description	Update an existing field's metadata and optionally alter the database column
+//	@Tags			fields
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string				true	"Collection name"
+//	@Param			field		path		string				true	"Field name"
+//	@Param			updates		body		UpdateFieldRequest	true	"Field update data"
+//	@Success		200			{object}	map[string]FieldDetail	"Updated field details"
+//	@Failure		400			{object}	ErrorResponse	"Bad request (invalid payload or no fields to update)"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		403			{object}	ErrorResponse	"Forbidden (admin access required)"
+//	@Failure		404			{object}	ErrorResponse	"Field not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/fields/{collection}/{field} [patch]
 func (h *FieldsHandler) updateField(c *gin.Context) {
 	// Only admins can update fields
 	if !h.isAdmin(c) {
@@ -621,6 +696,22 @@ func (h *FieldsHandler) updateField(c *gin.Context) {
 }
 
 // deleteField deletes a field from a collection
+//
+//	@Summary		Delete a field
+//	@Description	Delete a field from a collection and optionally drop the database column
+//	@Tags			fields
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			collection	path		string	true	"Collection name"
+//	@Param			field		path		string	true	"Field name"
+//	@Success		200			{object}	SuccessMessage	"Field deleted successfully"
+//	@Failure		400			{object}	ErrorResponse	"Bad request (cannot delete system field)"
+//	@Failure		401			{object}	ErrorResponse	"Unauthorized"
+//	@Failure		403			{object}	ErrorResponse	"Forbidden (admin access required)"
+//	@Failure		404			{object}	ErrorResponse	"Field not found"
+//	@Failure		500			{object}	ErrorResponse	"Internal server error"
+//	@Router			/fields/{collection}/{field} [delete]
 func (h *FieldsHandler) deleteField(c *gin.Context) {
 	// Only admins can delete fields
 	if !h.isAdmin(c) {

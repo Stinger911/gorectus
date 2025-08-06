@@ -1,5 +1,43 @@
 basePath: /api/v1
 definitions:
+  main.ActivityItem:
+    properties:
+      action:
+        type: string
+      collection:
+        type: string
+      comment:
+        type: string
+      id:
+        type: string
+      ip:
+        type: string
+      item:
+        type: string
+      timestamp:
+        type: string
+      user_id:
+        type: string
+      user_name:
+        type: string
+    type: object
+  main.CollectionMetrics:
+    properties:
+      collections_by_type:
+        additionalProperties:
+          type: integer
+        type: object
+      most_active_collections:
+        items:
+          $ref: '#/definitions/main.CollectionSummary'
+        type: array
+      recent_collections:
+        items:
+          $ref: '#/definitions/main.CollectionSummary'
+        type: array
+      total_collections:
+        type: integer
+    type: object
   main.CollectionModel:
     properties:
       created_at:
@@ -21,11 +59,167 @@ definitions:
         example: "2023-12-01T10:30:00Z"
         type: string
     type: object
+  main.CollectionSummary:
+    properties:
+      collection:
+        type: string
+      created_at:
+        type: string
+      hidden:
+        type: boolean
+      icon:
+        type: string
+      item_count:
+        type: integer
+      note:
+        type: string
+      singleton:
+        type: boolean
+    type: object
+  main.CreateFieldRequest:
+    properties:
+      conditions: {}
+      display:
+        type: string
+      display_options: {}
+      field:
+        type: string
+      group:
+        type: string
+      hidden:
+        type: boolean
+      interface:
+        type: string
+      note:
+        type: string
+      options: {}
+      readonly:
+        type: boolean
+      required:
+        type: boolean
+      schema:
+        allOf:
+        - $ref: '#/definitions/main.FieldSchema'
+        description: For creating database columns
+      sort:
+        type: integer
+      special:
+        items:
+          type: string
+        type: array
+      translations: {}
+      validation: {}
+      validation_message:
+        type: string
+      width:
+        type: string
+    required:
+    - field
+    type: object
+  main.DashboardOverview:
+    properties:
+      collection_metrics:
+        $ref: '#/definitions/main.CollectionMetrics'
+      recent_activity:
+        items:
+          $ref: '#/definitions/main.ActivityItem'
+        type: array
+      system_health:
+        $ref: '#/definitions/main.SystemHealth'
+      system_stats:
+        $ref: '#/definitions/main.SystemStats'
+      user_insights:
+        $ref: '#/definitions/main.UserInsights'
+    type: object
   main.ErrorResponse:
     properties:
       error:
         example: Invalid request payload
         type: string
+    type: object
+  main.FieldDetail:
+    properties:
+      collection:
+        type: string
+      conditions: {}
+      created_at:
+        type: string
+      display:
+        type: string
+      display_options: {}
+      field:
+        type: string
+      group:
+        type: string
+      hidden:
+        type: boolean
+      id:
+        type: string
+      interface:
+        type: string
+      note:
+        type: string
+      options: {}
+      readonly:
+        type: boolean
+      required:
+        type: boolean
+      sort:
+        type: integer
+      special:
+        items:
+          type: string
+        type: array
+      translations: {}
+      updated_at:
+        type: string
+      validation: {}
+      validation_message:
+        type: string
+      width:
+        type: string
+    type: object
+  main.FieldSchema:
+    properties:
+      data_type:
+        description: varchar, integer, boolean, text, json, uuid, timestamp, etc.
+        type: string
+      default_value:
+        description: Default value for column
+      foreign_column:
+        description: For foreign key relationships
+        type: string
+      foreign_table:
+        description: For foreign key relationships
+        type: string
+      is_nullable:
+        description: Whether column allows NULL
+        type: boolean
+      is_primary_key:
+        description: Whether column is primary key
+        type: boolean
+      is_unique:
+        description: Whether column should be unique
+        type: boolean
+      max_length:
+        description: For varchar
+        type: integer
+    type: object
+  main.FieldsListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/main.FieldDetail'
+        type: array
+      meta:
+        properties:
+          limit:
+            type: integer
+          page:
+            type: integer
+          total:
+            type: integer
+        type: object
     type: object
   main.ItemData:
     type: object
@@ -77,6 +271,128 @@ definitions:
       message:
         example: Operation completed successfully
         type: string
+    type: object
+  main.SystemHealth:
+    properties:
+      database_connected:
+        type: boolean
+      last_backup:
+        type: string
+      server_uptime:
+        type: string
+      version:
+        type: string
+    type: object
+  main.SystemStats:
+    properties:
+      active_users:
+        type: integer
+      total_collections:
+        type: integer
+      total_roles:
+        type: integer
+      total_sessions:
+        type: integer
+      total_users:
+        type: integer
+    type: object
+  main.UpdateCollectionRequest:
+    properties:
+      accountability:
+        type: string
+      archive_app_filter:
+        type: boolean
+      archive_field:
+        type: string
+      archive_value:
+        type: string
+      collapse:
+        type: string
+      color:
+        type: string
+      display_template:
+        type: string
+      group:
+        type: string
+      hidden:
+        type: boolean
+      icon:
+        type: string
+      item_duplication_fields: {}
+      note:
+        type: string
+      preview_url:
+        type: string
+      singleton:
+        type: boolean
+      sort:
+        type: integer
+      sort_field:
+        type: string
+      translations: {}
+      unarchive_value:
+        type: string
+      versioning:
+        type: boolean
+    type: object
+  main.UpdateFieldRequest:
+    properties:
+      conditions: {}
+      display:
+        type: string
+      display_options: {}
+      group:
+        type: string
+      hidden:
+        type: boolean
+      interface:
+        type: string
+      note:
+        type: string
+      options: {}
+      readonly:
+        type: boolean
+      required:
+        type: boolean
+      schema:
+        allOf:
+        - $ref: '#/definitions/main.FieldSchema'
+        description: For altering database columns
+      sort:
+        type: integer
+      special:
+        items:
+          type: string
+        type: array
+      translations: {}
+      validation: {}
+      validation_message:
+        type: string
+      width:
+        type: string
+    type: object
+  main.UserInsights:
+    properties:
+      most_active_users:
+        items:
+          $ref: '#/definitions/main.UserSummary'
+        type: array
+      new_users_this_month:
+        type: integer
+      new_users_this_week:
+        type: integer
+      recent_registrations:
+        items:
+          $ref: '#/definitions/main.UserSummary'
+        type: array
+      users_by_role:
+        additionalProperties:
+          type: integer
+        type: object
+      users_by_status:
+        additionalProperties:
+          type: integer
+        type: object
     type: object
   main.UserModel:
     properties:
@@ -132,6 +448,25 @@ definitions:
         type: string
       updated_at:
         example: "2023-12-01T10:30:00Z"
+        type: string
+    type: object
+  main.UserSummary:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_access:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      status:
         type: string
     type: object
 host: localhost:8080
@@ -324,6 +659,48 @@ paths:
       tags:
       - collections
   /collections/{collection}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific collection by its name
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Collection deleted successfully
+          schema:
+            $ref: '#/definitions/main.SuccessMessage'
+        "400":
+          description: Bad request - cannot delete system collection
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Collection not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a collection by name
+      tags:
+      - collections
     get:
       consumes:
       - application/json
@@ -358,6 +735,504 @@ paths:
       summary: Get collection by name
       tags:
       - collections
+    patch:
+      consumes:
+      - application/json
+      description: Update an existing collection in the system
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateCollectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated collection
+          schema:
+            $ref: '#/definitions/main.CollectionModel'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Collection not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an existing collection
+      tags:
+      - collections
+  /dashboard:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve comprehensive dashboard overview including system stats,
+        collection metrics, recent activity, system health, and user insights (user
+        insights only available for admins)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dashboard overview data
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/main.DashboardOverview'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get dashboard overview
+      tags:
+      - dashboard
+  /dashboard/activity:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve recent system activity with optional limit parameter
+      parameters:
+      - description: 'Maximum number of activity items to return (1-100, default:
+          20)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Recent activity data
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/main.ActivityItem'
+              type: array
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get recent activity
+      tags:
+      - dashboard
+  /dashboard/collections:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve collection metrics including total collections, distribution
+        by type, and activity data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Collection metrics data
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/main.CollectionMetrics'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get collection insights
+      tags:
+      - dashboard
+  /dashboard/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve system statistics including user counts, role counts,
+        collection counts, and active sessions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: System statistics
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/main.SystemStats'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get system statistics
+      tags:
+      - dashboard
+  /dashboard/users:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve user insights including user distribution by status and
+        role, new user statistics, and user activity data (Admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User insights data
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/main.UserInsights'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden - Admin access required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user insights
+      tags:
+      - dashboard
+  /fields:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of all fields in the system with optional
+        collection filtering
+      parameters:
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Number of items per page (max: 100, default: 50)'
+        in: query
+        name: limit
+        type: integer
+      - description: Filter fields by collection name
+        in: query
+        name: collection
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of fields with pagination metadata
+          schema:
+            $ref: '#/definitions/main.FieldsListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all fields
+      tags:
+      - fields
+  /fields/{collection}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all fields for a specific collection
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of fields for the collection
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/main.FieldDetail'
+              type: array
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Collection not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get fields by collection
+      tags:
+      - fields
+    post:
+      consumes:
+      - application/json
+      description: Create a new field in a collection with optional database column
+        creation
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Field creation data
+        in: body
+        name: field
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateFieldRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created field details
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/main.FieldDetail'
+            type: object
+        "400":
+          description: Bad request (invalid payload, field name, or field already
+            exists)
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "403":
+          description: Forbidden (admin access required)
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Collection not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "409":
+          description: Field already exists
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new field
+      tags:
+      - fields
+  /fields/{collection}/{field}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a field from a collection and optionally drop the database
+        column
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Field name
+        in: path
+        name: field
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Field deleted successfully
+          schema:
+            $ref: '#/definitions/main.SuccessMessage'
+        "400":
+          description: Bad request (cannot delete system field)
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "403":
+          description: Forbidden (admin access required)
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Field not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a field
+      tags:
+      - fields
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific field by collection and field name
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Field name
+        in: path
+        name: field
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Field details
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/main.FieldDetail'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Field not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get field by name
+      tags:
+      - fields
+    patch:
+      consumes:
+      - application/json
+      description: Update an existing field's metadata and optionally alter the database
+        column
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Field name
+        in: path
+        name: field
+        required: true
+        type: string
+      - description: Field update data
+        in: body
+        name: updates
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateFieldRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated field details
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/main.FieldDetail'
+            type: object
+        "400":
+          description: Bad request (invalid payload or no fields to update)
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "403":
+          description: Forbidden (admin access required)
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Field not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an existing field
+      tags:
+      - fields
   /health:
     get:
       consumes:
@@ -464,6 +1339,45 @@ paths:
       tags:
       - items
   /items/{collection}/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific item from a collection by its ID
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success message
+          schema:
+            $ref: '#/definitions/main.SuccessMessage'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Item not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an item
+      tags:
+      - items
     get:
       consumes:
       - application/json
@@ -501,6 +1415,55 @@ paths:
       security:
       - BearerAuth: []
       summary: Get item by ID
+      tags:
+      - items
+    patch:
+      consumes:
+      - application/json
+      description: Update an existing item in a specific collection
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection
+        required: true
+        type: string
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated item data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/main.ItemModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated item
+          schema:
+            $ref: '#/definitions/main.ItemModel'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Item not found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an existing item
       tags:
       - items
 securityDefinitions:

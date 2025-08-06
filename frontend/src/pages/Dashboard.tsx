@@ -89,10 +89,10 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       // Don't fetch data if user is not admin
-      if (!isAdmin) {
-        setLoading(false);
-        return;
-      }
+      // if (!isAdmin) {
+      //   setLoading(false);
+      //   return;
+      // }
 
       try {
         setLoading(true);
@@ -151,18 +151,18 @@ const Dashboard: React.FC = () => {
   };
 
   // Check admin access
-  if (!isAdmin) {
-    return (
-      <Box>
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
-          Dashboard
-        </Typography>
-        <Alert severity="error">
-          Access denied. Administrator privileges required to view this page.
-        </Alert>
-      </Box>
-    );
-  }
+  // if (!isAdmin) {
+  //   return (
+  //     <Box>
+  //       <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
+  //         Dashboard
+  //       </Typography>
+  //       <Alert severity="error">
+  //         Access denied. Administrator privileges required to view this page.
+  //       </Alert>
+  //     </Box>
+  //   );
+  // }
 
   if (loading) {
     return (
