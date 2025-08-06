@@ -24,6 +24,7 @@ import {
   Storage as StorageIcon,
   Mail as MailIcon,
 } from "@mui/icons-material";
+import { useAuth } from "../contexts/AuthContext";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -48,6 +49,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Settings: React.FC = () => {
+  const { isAdmin } = useAuth();
   const [tabValue, setTabValue] = useState(0);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -107,6 +109,16 @@ const Settings: React.FC = () => {
     }
     setJwtSecret(result);
   };
+
+  if (!isAdmin) {
+    return (
+      <Box>
+        <Alert severity="error">
+          Access denied. Administrator privileges required to view this page.
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box>

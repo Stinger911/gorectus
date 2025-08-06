@@ -13,6 +13,7 @@ import {
   Avatar,
   Chip,
   Divider,
+  Alert,
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -70,12 +71,22 @@ const UserInsightsComponent: React.FC<UserInsightsComponentProps> = ({
         return "error";
       case "editor":
         return "primary";
-      case "user":
+      case "public":
         return "secondary";
       default:
         return "default";
     }
   };
+
+  if (!data) {
+    return (
+      <Box>
+        <Alert severity="error">
+          Access denied. Administrator privileges required to view this page.
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Grid container spacing={3}>
@@ -88,33 +99,35 @@ const UserInsightsComponent: React.FC<UserInsightsComponentProps> = ({
           />
           <CardContent>
             <List dense>
-              {Object.entries(data.users_by_status).map(([status, count]) => (
-                <ListItem key={status} sx={{ px: 0 }}>
-                  <ListItemText
-                    primary={
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ textTransform: "capitalize" }}
+              {data &&
+                data.users_by_status &&
+                Object.entries(data.users_by_status).map(([status, count]) => (
+                  <ListItem key={status} sx={{ px: 0 }}>
+                    <ListItemText
+                      primary={
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
                         >
-                          {status}
-                        </Typography>
-                        <Chip
-                          label={count.toString()}
-                          size="small"
-                          color={getStatusColor(status)}
-                        />
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
+                          <Typography
+                            variant="body2"
+                            sx={{ textTransform: "capitalize" }}
+                          >
+                            {status}
+                          </Typography>
+                          <Chip
+                            label={count.toString()}
+                            size="small"
+                            color={getStatusColor(status)}
+                          />
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                ))}
             </List>
           </CardContent>
         </Card>
@@ -129,28 +142,30 @@ const UserInsightsComponent: React.FC<UserInsightsComponentProps> = ({
           />
           <CardContent>
             <List dense>
-              {Object.entries(data.users_by_role).map(([role, count]) => (
-                <ListItem key={role} sx={{ px: 0 }}>
-                  <ListItemText
-                    primary={
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Typography variant="body2">{role}</Typography>
-                        <Chip
-                          label={count.toString()}
-                          size="small"
-                          color={getRoleColor(role)}
-                        />
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
+              {data &&
+                data.users_by_role &&
+                Object.entries(data.users_by_role).map(([role, count]) => (
+                  <ListItem key={role} sx={{ px: 0 }}>
+                    <ListItemText
+                      primary={
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Typography variant="body2">{role}</Typography>
+                          <Chip
+                            label={count.toString()}
+                            size="small"
+                            color={getRoleColor(role)}
+                          />
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                ))}
             </List>
           </CardContent>
         </Card>
@@ -169,7 +184,7 @@ const UserInsightsComponent: React.FC<UserInsightsComponentProps> = ({
                 New Users This Week
               </Typography>
               <Typography variant="h4" color="primary">
-                {data.new_users_this_week}
+                {data ? data.new_users_this_week : 0}
               </Typography>
             </Box>
             <Divider sx={{ my: 2 }} />
@@ -178,7 +193,7 @@ const UserInsightsComponent: React.FC<UserInsightsComponentProps> = ({
                 New Users This Month
               </Typography>
               <Typography variant="h4" color="secondary">
-                {data.new_users_this_month}
+                {data ? data.new_users_this_month : 0}
               </Typography>
             </Box>
           </CardContent>
@@ -191,7 +206,7 @@ const UserInsightsComponent: React.FC<UserInsightsComponentProps> = ({
           <CardHeader title="Recent Registrations" />
           <CardContent sx={{ pt: 0 }}>
             <List dense>
-              {data.recent_registrations.length > 0 ? (
+              {data && data.recent_registrations.length > 0 ? (
                 data.recent_registrations.map((user: UserSummary) => (
                   <ListItem key={user.id} sx={{ px: 0 }}>
                     <ListItemAvatar>

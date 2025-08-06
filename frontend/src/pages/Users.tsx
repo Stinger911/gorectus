@@ -252,7 +252,7 @@ const Users: React.FC = () => {
         return "error";
       case "editor":
         return "warning";
-      case "moderator":
+      case "public":
         return "info";
       default:
         return "default";
