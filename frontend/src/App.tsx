@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import Collections from "./pages/Collections";
+import ViewCollection from "./pages/ViewCollection";
 import Settings from "./pages/Settings";
 import Layout from "./components/Layout/Layout";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
@@ -40,7 +41,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="users" element={<Users />} />
               <Route path="collections" element={<Collections />} />
-              <Route path="collections/:collection" element={<Collections />} />
+              <Route path="collections/:collectionName/view" element={<ViewCollection />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

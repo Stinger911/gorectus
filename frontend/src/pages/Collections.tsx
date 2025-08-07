@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -58,6 +59,7 @@ interface FieldFormData {
 }
 
 const Collections: React.FC = () => {
+  const navigate = useNavigate();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -367,7 +369,11 @@ const Collections: React.FC = () => {
               </CardContent>
 
               <CardActions>
-                <IconButton size="small" title="View Data">
+                <IconButton
+                  size="small"
+                  title="View Data"
+                  onClick={() => navigate(`/collections/${collection.collection}/view`)}
+                >
                   <ViewListIcon />
                 </IconButton>
                 <IconButton
