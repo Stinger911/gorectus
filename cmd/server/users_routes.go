@@ -38,6 +38,11 @@ func (h *UsersHandler) SetupRoutes(v1 *gin.RouterGroup) {
 	{
 		users.GET("", h.getUsers)
 		users.POST("", h.createUser)
+
+		// It's important to register /me routes before /:id routes
+		users.GET("/me", h.getMe)
+		users.PATCH("/me", h.updateMe)
+
 		users.GET("/:id", h.getUser)
 		users.PATCH("/:id", h.updateUser)
 		users.DELETE("/:id", h.deleteUser)
@@ -119,6 +124,146 @@ func (h *UsersHandler) isAdmin(c *gin.Context) bool {
 }
 
 // Users handlers implementations
+
+func (h *UsersHandler) getMe(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	user, err := h.getUserByID(userID)
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	} else if err != nil {
+		logrus.WithError(err).Error("Database error while fetching user")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
+func (h *UsersHandler) updateMe(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var req UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.WithError(err).Error("Invalid update user request payload")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	// Non-admin users cannot change certain fields
+	// This check is important for the /me endpoint
+	if req.Status != nil || req.RoleID != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions to update status or role"})
+		return
+	}
+
+	// Check if email already exists (if being updated)
+	if req.Email != nil {
+		var existingID string
+		err := h.db.QueryRow("SELECT id FROM users WHERE email = $1 AND id != $2", *req.Email, userID).Scan(&existingID)
+		if err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+			return
+		} else if err != sql.ErrNoRows {
+			logrus.WithError(err).Error("Database error while checking email")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+	}
+
+	// Build update query dynamically
+	updateFields := []string{}
+	args := []interface{}{}
+	argIndex := 1
+
+	if req.Email != nil {
+		updateFields = append(updateFields, "email = $"+strconv.Itoa(argIndex))
+		args = append(args, *req.Email)
+		argIndex++
+	}
+	if req.Password != nil {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			logrus.WithError(err).Error("Error hashing password")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Password hashing error"})
+			return
+		}
+		updateFields = append(updateFields, "password = $"+strconv.Itoa(argIndex))
+		args = append(args, string(hashedPassword))
+		argIndex++
+	}
+	if req.FirstName != nil {
+		updateFields = append(updateFields, "first_name = $"+strconv.Itoa(argIndex))
+		args = append(args, *req.FirstName)
+		argIndex++
+	}
+	if req.LastName != nil {
+		updateFields = append(updateFields, "last_name = $"+strconv.Itoa(argIndex))
+		args = append(args, *req.LastName)
+		argIndex++
+	}
+	if req.Avatar != nil {
+		updateFields = append(updateFields, "avatar = $"+strconv.Itoa(argIndex))
+		args = append(args, *req.Avatar)
+		argIndex++
+	}
+	if req.Language != nil {
+		updateFields = append(updateFields, "language = $"+strconv.Itoa(argIndex))
+		args = append(args, *req.Language)
+		argIndex++
+	}
+	if req.Theme != nil {
+		updateFields = append(updateFields, "theme = $"+strconv.Itoa(argIndex))
+		args = append(args, *req.Theme)
+		argIndex++
+	}
+	if req.EmailNotifications != nil {
+		updateFields = append(updateFields, "email_notifications = $"+strconv.Itoa(argIndex))
+		args = append(args, *req.EmailNotifications)
+		argIndex++
+	}
+
+	if len(updateFields) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No fields to update"})
+		return
+	}
+
+	// Add updated_at field
+	updateFields = append(updateFields, "updated_at = CURRENT_TIMESTAMP")
+
+	// Add user ID for WHERE clause
+	args = append(args, userID)
+
+	query := "UPDATE users SET " + updateFields[0]
+	for i := 1; i < len(updateFields); i++ {
+		query += ", " + updateFields[i]
+	}
+	query += " WHERE id = $" + strconv.Itoa(argIndex)
+
+	_, err := h.db.Exec(query, args...)
+	if err != nil {
+		logrus.WithError(err).Error("Database error while updating user")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	// Fetch updated user
+	user, err := h.getUserByID(userID)
+	if err != nil {
+		logrus.WithError(err).Error("Error fetching updated user")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"user_id":    userID,
+		"updated_by": userID,
+	}).Info("User updated their own profile")
+
+	c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
 func (h *UsersHandler) getUsers(c *gin.Context) {
 	// Only admins can list all users
 	if !h.isAdmin(c) {

@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import Collections from "./pages/Collections";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 import Layout from "./components/Layout/Layout";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 
@@ -42,6 +43,7 @@ function App() {
               <Route path="collections" element={<Collections />} />
               <Route path="collections/:collection" element={<Collections />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="profile" element={<Profile />} />
             </Route>
 
             {/* Catch all route */}

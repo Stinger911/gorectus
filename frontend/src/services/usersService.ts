@@ -136,6 +136,37 @@ class UsersService {
       throw new Error(error.response?.data?.error || 'Failed to delete user');
     }
   }
+
+  async getMe(): Promise<User> {
+    try {
+      const response: AxiosResponse<UserResponse> = await axios.get(
+        `${this.baseURL}/me`
+      );
+      if (response.data.data) {
+        return response.data.data;
+      } else {
+        throw new Error('No user data received');
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to fetch user profile');
+    }
+  }
+
+  async updateMe(userData: UpdateUserRequest): Promise<User> {
+    try {
+      const response: AxiosResponse<UserResponse> = await axios.patch(
+        `${this.baseURL}/me`,
+        userData
+      );
+      if (response.data.data) {
+        return response.data.data;
+      } else {
+        throw new Error('No user data received');
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update user profile');
+    }
+  }
 }
 
 export const usersService = new UsersService();

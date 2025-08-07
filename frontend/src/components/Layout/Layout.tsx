@@ -68,6 +68,11 @@ const Layout: React.FC = () => {
     navigate("/login");
   };
 
+  const handleProfile = () => {
+    handleProfileMenuClose();
+    navigate("/profile");
+  };
+
   const handleNavigation = (path: string) => {
     navigate(path);
     setMobileOpen(false);
@@ -223,7 +228,7 @@ const Layout: React.FC = () => {
         open={Boolean(anchorEl)}
         onClose={handleProfileMenuClose}
       >
-        <MenuItem onClick={handleProfileMenuClose}>
+        <MenuItem onClick={handleProfile}>
           <ListItemIcon>
             <AccountIcon fontSize="small" />
           </ListItemIcon>
