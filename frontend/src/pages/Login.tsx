@@ -67,7 +67,7 @@ const Login: React.FC = () => {
         </Box>
 
         {error && (
-          <Alert severity="error">
+          <Alert severity="error" role="alert">
             {error}
           </Alert>
         )}
